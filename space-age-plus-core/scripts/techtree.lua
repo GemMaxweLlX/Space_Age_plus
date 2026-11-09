@@ -118,12 +118,21 @@ local function inventory_of(entity)
   return entity.get_inventory(defines.inventory.chest)
 end
 
---- Виды колб в инвентаре, которых хватает на одно использование.
+--- Сколько предметов с таким именем во всех качествах.
+local function count_all(inventory, name)
+  local total = 0
+  for _, stack in pairs(inventory.get_contents()) do
+    if stack.name == name then total = total + stack.count end
+  end
+  return total
+end
+
+--- Виды колб в инвентаре, которых хватает на одно использование (любого качества).
 local function available_packs(inventory)
   local packs = {}
   for _, stack in pairs(inventory.get_contents()) do
     local proto = prototypes.item[stack.name]
-    if proto and proto.type == "tool" and inventory.get_item_count(stack.name) >= PACKS_PER_USE then
+    if proto and proto.type == "tool" and count_all(inventory, stack.name) >= PACKS_PER_USE then
       packs[stack.name] = true
     end
   end
@@ -132,7 +141,13 @@ end
 
 local function consume_packs(inventory, packs)
   for pack in pairs(packs) do
-    inventory.remove({ name = pack, count = PACKS_PER_USE })
+    local left = PACKS_PER_USE
+    for _, stack in pairs(inventory.get_contents()) do
+      if left <= 0 then break end
+      if stack.name == pack then
+        left = left - inventory.remove({ name = pack, count = math.min(left, stack.count), quality = stack.quality })
+      end
+    end
   end
 end
 
@@ -244,7 +259,7 @@ end
 local function run_decipherer(player, entity)
   local inventory = inventory_of(entity)
   -- Зашифрованные инопланетные данные расшифровываются первыми, по одной за нажатие.
-  if inventory.get_item_count("sap-alien-data") > 0 then
+  if count_all(inventory, "sap-alien-data") > 0 then
     inventory.remove({ name = "sap-alien-data", count = 1 })
     inventory.insert({ name = "sap-alien-data-decrypted", count = 1 })
     diary.add(player.force, "first-decryption")
@@ -374,7 +389,7 @@ function techtree.on_gui_opened(event)
     end
   elseif entity.name == VAULT then
     diary.add(player.force, "first-dungeon")
-    if entity.get_inventory(defines.inventory.chest).get_item_count("sap-alien-data") > 0 then
+    if count_all(entity.get_inventory(defines.inventory.chest), "sap-alien-data") > 0 then
       diary.add(player.force, "alien-data-before")
     end
   elseif entity.name == STARTING_WRECK then

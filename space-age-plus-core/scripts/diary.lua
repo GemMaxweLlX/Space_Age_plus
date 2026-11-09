@@ -256,7 +256,11 @@ end
 function diary.on_wreck_opened(player, wreck)
   local surface = wreck.surface.name
   local inventory = wreck.get_inventory(defines.inventory.chest)
-  if surface == "nauvis" and inventory and inventory.get_item_count("sap-data-card-cryotech") > 0 then
+  local has_cryo_card = false
+  for _, stack in pairs(inventory and inventory.get_contents() or {}) do
+    if stack.name == "sap-data-card-cryotech" then has_cryo_card = true end
+  end
+  if surface == "nauvis" and has_cryo_card then
     diary.add(player.force, "find-cold-blueprints")
   elseif surface == "solaris" then
     diary.add(player.force, "find-solaris-wreck")

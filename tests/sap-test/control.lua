@@ -539,8 +539,8 @@ steps[810] = function()
   local water = tank and tank.valid and tank.get_fluid_count("water") or 0
   local turbine = storage.mt_turbine
   if turbine and turbine.valid and tank and tank.valid then
-    log(string.format("SAP-TEST INFO turbine at %.1f,%.1f tank at %.1f,%.1f energy %.0f",
-      turbine.position.x, turbine.position.y, tank.position.x, tank.position.y, turbine.energy_generated_last_tick))
+    log(string.format("SAP-TEST INFO water %.1f turbine at %.1f,%.1f tank at %.1f,%.1f energy %.0f",
+      water, turbine.position.x, turbine.position.y, tank.position.x, tank.position.y, turbine.energy_generated_last_tick))
   end
   check("solaris: mega turbine returns water", water > 0, water)
 end
@@ -719,8 +719,16 @@ steps[7400] = function()
     for _, vault in pairs(surface.find_entities_filtered({ name = "sap-alien-vault" })) do
       vaults = vaults + 1
       local inv = vault.get_inventory(defines.inventory.chest)
-      if inv.get_item_count("sap-data-card-alien") == 1 and inv.get_item_count("sap-alien-data") == 1 then
+      local card, data = 0, 0
+      for _, stack in pairs(inv.get_contents()) do
+        if stack.name == "sap-data-card-alien" then card = card + stack.count end
+        if stack.name == "sap-alien-data" then data = data + stack.count end
+      end
+      if card == 1 and data == 1 then
         with_loot = with_loot + 1
+      else
+        log("SAP-TEST INFO vault on " .. surface.name .. " at " .. serpent.line(vault.position) .. ": "
+            .. serpent.line(inv.get_contents()))
       end
     end
   end

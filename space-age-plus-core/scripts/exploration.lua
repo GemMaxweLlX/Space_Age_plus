@@ -155,8 +155,14 @@ function exploration.on_rocket_launch_ordered(event)
   if not inventory then return end
   local force = silo.force
   local s = force_state(force)
-  for _ = 1, inventory.get_item_count(MK1) do launch_mk1(force, s) end
-  for _ = 1, inventory.get_item_count(MK2) do launch_mk2(force, s) end
+  -- Считаем спутники любого качества (get_item_count без качества видит только обычные).
+  local mk1, mk2 = 0, 0
+  for _, stack in pairs(inventory.get_contents()) do
+    if stack.name == MK1 then mk1 = mk1 + stack.count end
+    if stack.name == MK2 then mk2 = mk2 + stack.count end
+  end
+  for _ = 1, mk1 do launch_mk1(force, s) end
+  for _ = 1, mk2 do launch_mk2(force, s) end
   sync_force(force)
 end
 
