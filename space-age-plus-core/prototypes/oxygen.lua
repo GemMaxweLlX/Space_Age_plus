@@ -126,7 +126,7 @@ data:extend({
   {
     type = "recipe",
     name = "sap-oxygen-electrolysis",
-    category = "sap-oxygen-generation",
+    categories = { "sap-oxygen-generation" },
     subgroup = "sap-oxygen",
     order = "f-a",
     enabled = false,
@@ -138,7 +138,7 @@ data:extend({
   {
     type = "recipe",
     name = "sap-oxygen-from-calcite",
-    category = "sap-oxygen-generation",
+    categories = { "sap-oxygen-generation" },
     subgroup = "sap-oxygen",
     order = "f-b",
     enabled = false,
@@ -157,7 +157,7 @@ data:extend({
   {
     type = "recipe",
     name = "sap-oxygen-distribution",
-    category = "sap-oxygen-distribution",
+    categories = { "sap-oxygen-distribution" },
     icons = tinted_icon("__base__/graphics/icons/fluid/steam.png", OXYGEN_TINT),
     hidden = true,
     enabled = false,

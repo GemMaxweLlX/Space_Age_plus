@@ -1,10 +1,8 @@
--- space-age-plus-debris: runtime-логика.
--- Модуль пока заготовка. План (docs: Глобальные механики → Мусор):
---   1. Выброс предмета с платформы → storage.debris[маршрут][сегмент] (10% отрезки).
---   2. Платформа на отрезке → спавн обломков по составу сегмента.
---   3. Подбор сборщиком астероидов → счётчик сегмента уменьшается.
---   4. После 20+ запусков ракет → орбитальные обломки, падения на планету.
+-- space-age-plus-debris: runtime-логика (docs: Глобальные механики → Мусор).
+local debris = require("scripts.debris")
 
-script.on_init(function()
-  storage.debris = storage.debris or {}
-end)
+script.on_init(debris.on_init)
+script.on_configuration_changed(debris.on_configuration_changed)
+script.on_nth_tick(debris.TICK_INTERVAL, debris.on_tick)
+script.on_nth_tick(debris.FALL_INTERVAL, debris.on_fall_tick)
+script.on_event(defines.events.on_rocket_launched, debris.on_rocket_launched)

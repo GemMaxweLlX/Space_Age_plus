@@ -39,7 +39,7 @@ function api.oxygen_collector_recipe(planet, pressure, ingredients, amount)
   return {
     type = "recipe",
     name = "sap-oxygen-collection-" .. planet,
-    category = "sap-oxygen-collection",
+    categories = { "sap-oxygen-collection" },
     subgroup = "sap-oxygen",
     order = "e-" .. planet,
     icons = { { icon = "__base__/graphics/icons/fluid/steam.png", icon_size = 64,
