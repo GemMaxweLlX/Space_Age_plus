@@ -217,3 +217,42 @@ sap.upgrade({
   ingredients = { { "power-armor", 1 }, { "sap-cryo-carapace", 30 }, { "sap-nivalite-wire", 20 } },
   tech = nivar_tech("sap-cryo-armor", "__base__/graphics/icons/power-armor.png", 800, "power-armor"),
 })
+
+-- Защита от криобури без энергии (docs: Техи планет → Nivar → Защита от холода) ------------
+-- Изолирующий фундамент: машина на нём замерзает в криобурю вдвое медленнее.
+local foundation_tile = util.table.deepcopy(data.raw.tile["refined-concrete"])
+foundation_tile.name = "sap-insulating-foundation"
+foundation_tile.minable = { mining_time = 0.1, result = "sap-insulating-foundation" }
+foundation_tile.tint = { r = 0.7, g = 0.8, b = 1, a = 1 }
+foundation_tile.frozen_variant = nil -- иначе на холодной планете плитка превращается в замёрзший бетон
+foundation_tile.thawed_variant = nil
+local foundation_item = util.table.deepcopy(data.raw.item["refined-concrete"])
+foundation_item.name = "sap-insulating-foundation"
+foundation_item.icon = nil
+foundation_item.icons = tinted("__base__/graphics/icons/refined-concrete.png")
+foundation_item.place_as_tile.result = "sap-insulating-foundation"
+foundation_item.order = "z[sap-nivar]-f"
+data:extend({
+  foundation_tile, foundation_item,
+  recipe({
+    name = "sap-insulating-foundation", energy_required = 2,
+    ingredients = { { type = "item", name = "refined-concrete", amount = 10 }, { type = "item", name = "sap-cryolite", amount = 2 } },
+    results = { { type = "item", name = "sap-insulating-foundation", amount = 10 } },
+  }),
+  tech("sap-insulating-foundation", "__base__/graphics/icons/refined-concrete.png", { "sap-insulating-foundation" }, 500,
+       { "sap-planet-discovery-nivar" }),
+})
+-- Термоизоляционные стены: машина, у которой такие стены есть со всех четырёх сторон
+-- (в пределах 16 клеток), замерзает вдвое медленнее (scripts/cryostorm.lua).
+sap.upgrade({
+  base = "stone-wall", name = "sap-insulated-wall", tint = TINT,
+  change = function(e) e.max_health = e.max_health * 2 end,
+  ingredients = { { "stone-wall", 1 }, { "sap-dark-ice", 2 } }, time = 1,
+  tech = nivar_tech("sap-insulated-wall", "__base__/graphics/icons/wall.png", 500),
+})
+-- Пещерная броня: лёгкая, в пещерах персонаж бегает на 30% быстрее (scripts/caves.lua).
+sap.upgrade({
+  base = "heavy-armor", name = "sap-cave-armor", tint = { r = 0.4, g = 0.45, b = 0.6, a = 1 },
+  ingredients = { { "heavy-armor", 1 }, { "sap-ice-spike", 10 }, { "sap-cryo-gland", 5 } },
+  tech = nivar_tech("sap-cave-armor", "__base__/graphics/icons/heavy-armor.png", 600),
+})

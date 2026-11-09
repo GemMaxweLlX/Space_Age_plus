@@ -8,3 +8,4 @@ Date: 2026-11-09
     - Cryostorms freeze machines in stages; cryo heater and cryo shield dome protect them.
     - Blizzard nests and Ice guardians on the surface, cave nests and Bottomless in the caves.
     - Hardcore: no platform delivery (cargo pods return to the hub).
+    - Insulating foundation, insulated walls (slower freezing in cryostorms), cave armor (+30% run speed in caves).

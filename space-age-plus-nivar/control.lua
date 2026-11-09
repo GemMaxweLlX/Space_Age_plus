@@ -11,6 +11,7 @@ end)
 
 script.on_nth_tick(cryostorm.TICK_INTERVAL, cryostorm.on_tick)
 script.on_nth_tick(creatures.TICK_INTERVAL, creatures.on_tick)
+script.on_nth_tick(caves.ARMOR_TICK_INTERVAL + 1, caves.on_armor_tick)
 script.on_event(defines.events.on_chunk_generated, creatures.on_chunk_generated)
 script.on_event(defines.events.on_surface_created, caves.on_surface_created)
 script.on_event(defines.events.on_gui_opened, caves.on_gui_opened)

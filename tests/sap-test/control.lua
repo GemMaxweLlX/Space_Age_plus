@@ -362,6 +362,36 @@ steps[140] = function()
   surface.create_entity({ name = "electric-energy-interface", position = { warm_pos.x, warm_pos.y + 4 }, force = "player" })
   surface.create_entity({ name = "substation", position = { warm_pos.x + 3, warm_pos.y + 3 }, force = "player" })
   remote.call("sap-nivar", "set_cryostorm", true)
+
+  -- Изолирующий фундамент и фундамент + стены.
+  local function insulated(near, walls)
+    local p = surface.find_non_colliding_position("assembling-machine-2", near, 60, 20)
+    local tiles = {}
+    for x = -2, 1 do for y = -2, 1 do tiles[#tiles + 1] = { name = "sap-insulating-foundation", position = { p.x + x, p.y + y } } end end
+    surface.set_tiles(tiles)
+    local machine = surface.create_entity({ name = "assembling-machine-2", position = p, force = "player" })
+    if walls then
+      for _, offset in pairs({ { 0, -6 }, { 0, 6 }, { -6, 0 }, { 6, 0 } }) do
+        surface.create_entity({ name = "sap-insulated-wall", position = { p.x + offset[1], p.y + offset[2] }, force = "player" })
+      end
+    end
+    return machine
+  end
+  storage.nv_foundation = insulated({ 0, 80 }, false)
+  storage.nv_enclosed = insulated({ 0, -80 }, true)
+
+  -- Пещерная броня.
+  local caves_surface = game.surfaces["nivar-caves"]
+  local cpos = caves_surface.find_non_colliding_position("character", { 5, 5 }, 30, 1)
+  local caver = caves_surface.create_entity({ name = "character", position = cpos, force = "player" })
+  caver.get_inventory(defines.inventory.character_armor).insert({ name = "sap-cave-armor", count = 1 })
+  storage.caver = caver
+end
+
+steps[400] = function()
+  local caver = storage.caver
+  check("nivar: cave armor speeds up in caves", caver and caver.valid and caver.character_running_speed_modifier >= 0.29,
+        caver and caver.valid and caver.character_running_speed_modifier)
 end
 
 steps[4500] = function()
@@ -370,6 +400,17 @@ steps[4500] = function()
         cold and cold.valid and tostring(cold.disabled_by_script))
   check("nivar: cryo heater protects machine", warm and warm.valid and not warm.disabled_by_script,
         warm and warm.valid and tostring(warm.disabled_by_script))
+  local foundation, enclosed = storage.nv_foundation, storage.nv_enclosed
+  if foundation and foundation.valid then
+    local fp = foundation.position
+    log("SAP-TEST INFO foundation machine at " .. serpent.line(fp) .. " tile " .. foundation.surface.get_tile(fp.x, fp.y).name
+        .. " status " .. serpent.line(foundation.custom_status))
+  end
+  check("nivar: foundation slows freezing", foundation and foundation.valid and not foundation.disabled_by_script,
+        foundation and foundation.valid and tostring(foundation.disabled_by_script))
+  check("nivar: foundation + walls slow it more", enclosed and enclosed.valid and not enclosed.disabled_by_script
+        and enclosed.custom_status == nil or (enclosed.custom_status and enclosed.custom_status.diode ~= defines.entity_status_diode.red),
+        enclosed and enclosed.valid and serpent.line(enclosed.custom_status))
   local nests = game.surfaces["nivar"].count_entities_filtered({ name = "sap-blizzard-nest" })
     + game.surfaces["nivar-caves"].count_entities_filtered({ name = "sap-cave-nest" })
   check("nivar: nests placed", nests > 0, nests)
@@ -533,6 +574,7 @@ steps[2600] = function()
   local platform = storage.echaris_platform
   if not (platform and platform.valid) then return end
   local flavored = #platform.find_asteroid_chunks_filtered({ name = "sap-debris-electrified" })
+  log("SAP-TEST INFO echaris chunks: " .. #platform.find_asteroid_chunks_filtered({}))
   check("debris: echaris orbit gives electrified debris", flavored > 0, flavored)
 end
 

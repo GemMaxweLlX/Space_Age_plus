@@ -23,6 +23,8 @@ local CALM_MIN, CALM_MAX = 4 * 60 * 60, 8 * 60 * 60
 local COLD, FROZEN, STOPPED, BROKEN = 3, 6, 12, 18
 local MAX_COLD = 24
 local BROKEN_DAMAGE_FRACTION = 0.05
+local FOUNDATION = "sap-insulating-foundation"
+local WALL, WALL_REACH = "sap-insulated-wall", 16
 local PACK_SIZE = 4
 local PACK_RADIUS = 150
 
@@ -62,6 +64,21 @@ local function protected_set(surface)
   for name, radius in pairs(HEATERS) do mark(name, radius) end
   mark(DOME, DOME_RADIUS)
   return set
+end
+
+--- Множитель скорости замерзания без энергии: фундамент ×0.5, замкнутые стены ×0.5.
+local function passive_factor(surface, machine)
+  local factor = 1
+  local p = machine.position
+  if surface.get_tile(p.x, p.y).name == FOUNDATION then factor = factor * 0.5 end
+  local function wall(area)
+    return surface.count_entities_filtered({ name = WALL, area = area, limit = 1 }) > 0
+  end
+  if wall({ { p.x - 2, p.y - WALL_REACH }, { p.x + 2, p.y } }) and wall({ { p.x - 2, p.y }, { p.x + 2, p.y + WALL_REACH } })
+      and wall({ { p.x - WALL_REACH, p.y - 2 }, { p.x, p.y + 2 } }) and wall({ { p.x, p.y - 2 }, { p.x + WALL_REACH, p.y + 2 } }) then
+    factor = factor * 0.5
+  end
+  return factor
 end
 
 local function release_packs(surface)
@@ -108,7 +125,7 @@ function cryostorm.on_tick()
     seen[id] = true
     local value = s.cold[id] or 0
     if s.active and not protected[id] then
-      value = math.min(MAX_COLD, value + 1)
+      value = math.min(MAX_COLD, value + passive_factor(surface, machine))
     else
       value = math.max(0, value - 3)
     end

@@ -135,6 +135,30 @@ function caves.partner_of(entity)
   return state().pairs[entity.unit_number]
 end
 
+-- Пещерная броня: +30% к скорости бега в пещерах.
+caves.ARMOR_TICK_INTERVAL = 60
+local CAVE_ARMOR, CAVE_SPEED = "sap-cave-armor", 0.3
+
+function caves.on_armor_tick()
+  local s = state()
+  s.boosted = s.boosted or {}
+  for _, surface in pairs({ game.get_surface(CAVES), game.get_surface(SURFACE) }) do
+    for _, character in pairs(surface.find_entities_filtered({ type = "character" })) do
+      local inventory = character.get_inventory(defines.inventory.character_armor)
+      local wearing = inventory and not inventory.is_empty() and inventory[1].valid_for_read
+        and inventory[1].name == CAVE_ARMOR
+      local id = character.unit_number
+      if wearing and surface.name == CAVES and not s.boosted[id] then
+        character.character_running_speed_modifier = character.character_running_speed_modifier + CAVE_SPEED
+        s.boosted[id] = true
+      elseif s.boosted[id] and not (wearing and surface.name == CAVES) then
+        character.character_running_speed_modifier = character.character_running_speed_modifier - CAVE_SPEED
+        s.boosted[id] = nil
+      end
+    end
+  end
+end
+
 function caves.on_init()
   state()
 end
