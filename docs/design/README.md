@@ -9,3 +9,4 @@ Markdown-версия [HTML-документа](../space_age_plus_MASTER.html). 
 5. [Технологии](04-tech.md)
 6. [Дневник](05-diary.md)
 7. [Вопросы](06-questions.md)
+8. [Вопросы реализации](07-implementation-questions.md) — технические вопросы переноса на Factorio 2.1 (не из оригинала)
