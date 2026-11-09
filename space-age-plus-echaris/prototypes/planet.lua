@@ -46,6 +46,11 @@ data:extend({
     to = "echaris",
     order = "d-b",
     length = 4000,
+    icons = {
+      { icon = "__space-age__/graphics/icons/planet-route.png" },
+      { icon = "__space-age__/graphics/icons/fulgora.png", icon_size = 64, scale = 0.333, shift = { -6, -6 } },
+      { icon = "__space-age__/graphics/icons/fulgora.png", icon_size = 64, scale = 0.333, shift = { 6, 6 }, tint = TINT },
+    },
     asteroid_spawn_definitions = util.table.deepcopy(
       data.raw["space-connection"]["nauvis-fulgora"].asteroid_spawn_definitions),
   },
