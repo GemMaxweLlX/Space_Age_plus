@@ -7,5 +7,9 @@ sap.register_oxygen_planet("fulgora", { solution = "collector" })
 sap.register_oxygen_planet("gleba", { solution = "collector" })
 sap.register_oxygen_planet("aquilo", { solution = "collector" })
 
+-- Реестр исследуемых планет (заполняют модули планет, см. api.register_explorable_planet).
+data:extend({ { type = "mod-data", name = sap.EXPLORABLE_PLANETS, data = {} } })
+
 require("prototypes.oxygen")
 require("prototypes.diary")
+require("prototypes.exploration")

@@ -11,6 +11,10 @@ data:extend({
   { type = "int-setting", name = "sap-oxygen-distributor-radius", setting_type = "startup",
     default_value = 16, minimum_value = 8, maximum_value = 64, order = "a-d" },
 
+  -- Исследование планет
+  { type = "bool-setting", name = "sap-exploration-vanilla-planets", setting_type = "startup",
+    default_value = false, order = "b-a" },
+
   -- Глобальные хардкор-опции
   { type = "bool-setting", name = "sap-hardcore-strict-oxygen", setting_type = "runtime-global",
     default_value = false, order = "z-a" },
