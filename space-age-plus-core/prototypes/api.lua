@@ -55,4 +55,32 @@ function api.oxygen_collector_recipe(planet, pressure, ingredients, amount)
   }
 end
 
+--- Точка на звёздной карте, где находится планета-родитель. Нужна спутникам:
+--- у спутника `origin` = позиция родителя, а distance/orientation считаются от неё.
+--- Ориентация 0 — вверх, по часовой стрелке (как у ванильных планет).
+--- @param parent string имя планеты-родителя
+--- @return table MapPosition
+function api.moon_origin(parent)
+  local p = data.raw.planet[parent]
+  local base = p.origin or { 0, 0 }
+  local bx, by = base.x or base[1], base.y or base[2]
+  local angle = 2 * math.pi * p.orientation
+  return { bx + p.distance * math.sin(angle), by - p.distance * math.cos(angle) }
+end
+
+api.EXPLORABLE_PLANETS = "sap-explorable-planets"
+
+--- Регистрирует планету в системе исследования (телескоп и спутники).
+--- Технология открытия планеты будет скрыта, пока спутник 2 поколения её не разведает.
+--- @param planet string имя планеты
+--- @param opts table { discovery_tech = "имя технологии", parent = "родитель"|nil }
+function api.register_explorable_planet(planet, opts)
+  local proto = data.raw["mod-data"] and data.raw["mod-data"][api.EXPLORABLE_PLANETS]
+  if not proto then
+    data:extend({ { type = "mod-data", name = api.EXPLORABLE_PLANETS, data = {} } })
+    proto = data.raw["mod-data"][api.EXPLORABLE_PLANETS]
+  end
+  proto.data[planet] = { discovery_tech = opts.discovery_tech, parent = opts.parent }
+end
+
 return api
