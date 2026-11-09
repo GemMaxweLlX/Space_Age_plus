@@ -49,6 +49,7 @@ end
 
 -- Категория технологии по имени. Порядок важен: первое совпадение побеждает.
 local CATEGORY_RULES = {
+  { "alien", { "^sap%-alien" } },
   { "sap-military", { "^sap%-.*weapon", "^sap%-.*turret", "^sap%-.*armor", "^sap%-.*emp" } },
   { "sap-energy", { "^sap%-.*energy", "^sap%-.*reactor", "^sap%-.*boiler", "^sap%-.*turbine" } },
   { "military", { "military", "weapon", "damage", "turret", "armor", "gun", "artillery", "defense",

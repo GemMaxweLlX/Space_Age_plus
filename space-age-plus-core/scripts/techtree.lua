@@ -38,6 +38,10 @@ local QUALITY = {
 local WRECK_CHANCE_NAUVIS = 1 / 30
 local WRECK_CHANCE_OTHER = 1 / 60
 
+local VAULT = "sap-alien-vault"
+local VAULT_CHANCE = 1 / 80
+local VAULT_DISTANCE = 200
+local GUARDIANS = 2
 local FRAME_RELATIVE = "sap_techtree_relative"
 local FRAME_CHOICE = "sap_techtree_choice"
 
@@ -52,9 +56,14 @@ local function catalog()
   return proto and proto.data or {}
 end
 
+--- Категории карт для обломков и ЛЛК. «Инопланетные» — только из хранилищ древней расы.
 local function categories()
   local proto = prototypes.mod_data["sap-tech-categories"]
-  return proto and proto.data.list or {}
+  local list = {}
+  for _, c in pairs(proto and proto.data.list or {}) do
+    if c ~= "alien" then list[#list + 1] = c end
+  end
+  return list
 end
 
 local function state()
@@ -155,7 +164,7 @@ local function candidates(force, category, packs)
   for name, info in pairs(catalog()) do
     local tech = force.technologies[name]
     if tech and not tech.enabled and not tech.researched
-        and (category == nil or info.category == category) then
+        and (category == nil and info.category ~= "alien" or info.category == category) then
       local ok = #info.packs > 0
       for _, pack in pairs(info.packs) do
         if not packs[pack] then ok = false break end
@@ -234,6 +243,15 @@ end
 
 local function run_decipherer(player, entity)
   local inventory = inventory_of(entity)
+  -- Зашифрованные инопланетные данные расшифровываются первыми, по одной за нажатие.
+  if inventory.get_item_count("sap-alien-data") > 0 then
+    inventory.remove({ name = "sap-alien-data", count = 1 })
+    inventory.insert({ name = "sap-alien-data-decrypted", count = 1 })
+    diary.add(player.force, "first-decryption")
+    diary.add(player.force, "alien-data-after")
+    player.print({ "sap-techtree.alien-decrypted" })
+    return
+  end
   local card = find_card(inventory)
   if not card then
     player.print({ "sap-techtree.no-card" })
@@ -354,6 +372,11 @@ function techtree.on_gui_opened(event)
       s.opened_wrecks[entity.unit_number] = true
       diary.on_wreck_opened(player, entity)
     end
+  elseif entity.name == VAULT then
+    diary.add(player.force, "first-dungeon")
+    if entity.get_inventory(defines.inventory.chest).get_item_count("sap-alien-data") > 0 then
+      diary.add(player.force, "alien-data-before")
+    end
   elseif entity.name == STARTING_WRECK then
     local s = state()
     if not s.starting_wreck then
@@ -391,6 +414,12 @@ function techtree.on_chunk_generated(event)
   if not enabled() then return end
   local surface = event.surface
   if not (surface and surface.valid and surface.planet) then return end
+  do
+    local a = event.area
+    local cx, cy = (a.left_top.x + a.right_bottom.x) / 2, (a.left_top.y + a.right_bottom.y) / 2
+    local d = math.sqrt(cx * cx + cy * cy)
+    if d > VAULT_DISTANCE and math.random() < VAULT_CHANCE then techtree.queue_vault(surface, { x = cx, y = cy }, d) end
+  end
   local chance = surface.name == "nauvis" and WRECK_CHANCE_NAUVIS or WRECK_CHANCE_OTHER
   if math.random() >= chance then return end
   local area = event.area
@@ -407,6 +436,44 @@ function techtree.on_chunk_generated(event)
   local list = categories()
   local category = list[math.random(1, #list)]
   wreck.get_inventory(defines.inventory.chest).insert({ name = CARD_PREFIX .. category, count = 1, quality = quality })
+end
+
+-- Хранилища древней расы ----------------------------------------------------------
+
+
+function techtree.queue_vault(surface, center, distance)
+  local s = state()
+  s.vault_queue = s.vault_queue or {}
+  s.vault_queue[#s.vault_queue + 1] = { surface = surface.name, position = center, distance = distance }
+end
+
+local function build_vault(item)
+  local surface = game.get_surface(item.surface)
+  if not surface then return end
+  local position = surface.find_non_colliding_position(VAULT, item.position, 48, 2)
+  if not position then return end
+  local vault = surface.create_entity({ name = VAULT, position = position, force = "neutral" })
+  if not vault then return end
+  local roll = math.random() + math.min(item.distance / 3000, 0.6)
+  local quality = roll > 1.45 and "legendary" or roll > 1.3 and "epic" or roll > 1.1 and "rare"
+    or roll > 0.85 and "uncommon" or "normal"
+  local inventory = vault.get_inventory(defines.inventory.chest)
+  inventory.insert({ name = CARD_PREFIX .. "alien", count = 1, quality = quality })
+  inventory.insert({ name = "sap-alien-data", count = 1 })
+  for i = 1, GUARDIANS do
+    local angle = i * math.pi
+    local near = { position.x + math.cos(angle) * 10, position.y + math.sin(angle) * 10 }
+    local gpos = surface.find_non_colliding_position("sap-alien-guardian", near, 10, 1)
+    if gpos then surface.create_entity({ name = "sap-alien-guardian", position = gpos, force = "enemy" }) end
+  end
+end
+
+function techtree.on_tick()
+  local s = state()
+  if not s.vault_queue or #s.vault_queue == 0 then return end
+  local queue = s.vault_queue
+  s.vault_queue = {}
+  for _, item in pairs(queue) do build_vault(item) end
 end
 
 local function place_starting_wreck()

@@ -7,3 +7,5 @@ Date: 2026-11-09
     - Hidden technology tree: data cards, decipherer, logic lab complex, data wrecks (startup setting, off by default).
     - Quality versions of building technologies with productivity, speed and efficiency bonuses (I3).
     - Engineer's diary (J): background choice, 72 entries from the design document triggered by game events, company logs in wrecks.
+    - Ancient vaults with alien data cards and encrypted data; three alien technologies; decryption in the decipherer.
+    - Diary entries for vaults and decryption, autonomous base, production deadlock, asteroid hits, first delivery, first Nauvis capture.

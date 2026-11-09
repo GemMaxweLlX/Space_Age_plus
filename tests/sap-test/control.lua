@@ -712,6 +712,47 @@ steps[7300] = function()
   check("capsule: with tech cargo lands on solaris", back == 7, back)
 end
 
+-- Тики 7400+: хранилища древней расы и последние записи дневника ---------------------
+steps[7400] = function()
+  local vaults, with_loot = 0, 0
+  for _, surface in pairs(game.surfaces) do
+    for _, vault in pairs(surface.find_entities_filtered({ name = "sap-alien-vault" })) do
+      vaults = vaults + 1
+      local inv = vault.get_inventory(defines.inventory.chest)
+      if inv.get_item_count("sap-data-card-alien") == 1 and inv.get_item_count("sap-alien-data") == 1 then
+        with_loot = with_loot + 1
+      end
+    end
+  end
+  check("alien: vaults generated", vaults > 0, vaults)
+  check("alien: vaults hold alien card and data", vaults > 0 and with_loot == vaults, with_loot .. "/" .. vaults)
+  check("alien: alien techs in alien category",
+        prototypes.mod_data["sap-tech-catalog"].data["sap-alien-geometry"].category == "alien")
+
+  -- Дедлок: отдельная команда, 12 машин с рецептом и без ингредиентов.
+  local force = game.create_force("sap-deadlock-test")
+  local surface = game.surfaces.nauvis
+  local base = surface.find_non_colliding_position("substation", { 200, 200 }, 100, 20)
+  surface.create_entity({ name = "electric-energy-interface", position = { base.x - 3, base.y }, force = force })
+  surface.create_entity({ name = "substation", position = base, force = force })
+  for i = 0, 11 do
+    local m = surface.create_entity({ name = "assembling-machine-2",
+      position = { base.x - 6 + (i % 4) * 3 + 0.5, base.y + 3 + math.floor(i / 4) * 3 + 0.5 }, force = force })
+    if m then m.set_recipe("iron-gear-wheel") end
+  end
+  storage.deadlock_force = force.name
+end
+
+steps[7500] = function()
+  remote.call("sap-diary", "check_base", storage.deadlock_force)
+  local entries = {}
+  for _, key in pairs(remote.call("sap-diary", "entries", storage.deadlock_force)) do entries[key] = true end
+  check("diary: deadlock detected", entries["deadlock"] == true, serpent.line(entries))
+  local player_entries = {}
+  for _, key in pairs(remote.call("sap-diary", "entries", "player")) do player_entries[key] = true end
+  check("diary: first interplanetary delivery", player_entries["first-delivery"] == true)
+end
+
 -- Конец ---------------------------------------------------------------------------
 -- Мусор проверяем раньше: куски медленно пролетают мимо и улетают с карты.
 steps[2900] = function()

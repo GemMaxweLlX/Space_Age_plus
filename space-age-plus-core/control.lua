@@ -79,11 +79,14 @@ script.on_event(defines.events.on_rocket_launched, diary.on_rocket_launched)
 script.on_event(defines.events.on_player_changed_surface, diary.on_player_changed_surface)
 script.on_event(defines.events.on_player_died, diary.on_player_died)
 script.on_nth_tick(diary.TICK_INTERVAL, diary.on_tick)
+script.on_nth_tick(120 + 7, techtree.on_tick)
+script.on_event(defines.events.on_cargo_pod_finished_descending, diary.on_cargo_pod_finished_descending)
 remote.add_interface("sap-diary", {
   add = function(force_name, key)
     local force = game.forces[force_name]
     if force then diary.add(force, key) end
   end,
+  check_base = function(force_name) diary.check_base_now(game.forces[force_name]) end,
   entries = function(force_name)
     local result = {}
     local s = storage.diary and storage.diary.forces[game.forces[force_name].index]

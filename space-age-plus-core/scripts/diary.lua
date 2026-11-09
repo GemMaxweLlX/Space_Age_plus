@@ -147,6 +147,10 @@ function diary.on_entity_died(event)
     diary.add(entity.force, "capture-starved")
     return
   end
+  if entity.surface.platform and event.cause and event.cause.valid and event.cause.type == "asteroid" then
+    diary.add(entity.force, "asteroid-hit")
+    return
+  end
   if entity.force.name ~= "enemy" or (entity.type ~= "unit" and entity.type ~= "spider-unit") then return end
   local rules = KILLS[name]
   local counter = name
@@ -278,6 +282,7 @@ function diary.on_tech_unlocked(force, tech_name, quality, category, was_unlocke
   if tech_name == "construction-robotics" or tech_name == "logistic-robotics" then diary.add(force, "tech-roboport") end
   if category == "military" or category == "sap-military" then diary.add(force, "tech-military") end
   if category == "cryotech" then diary.add(force, "tech-other-planet") end
+  if category == "alien" then diary.add(force, "tech-alien") end
 end
 
 --- Запуски спутников (scripts/exploration.lua).
@@ -296,7 +301,53 @@ function diary.on_satellite(force, kind, planet, launches)
   end
 end
 
+--- Первая межпланетная доставка: капсула с грузом с платформы села на планету.
+function diary.on_cargo_pod_finished_descending(event)
+  local pod = event.cargo_pod
+  if event.player_index or not (pod and pod.valid) then return end
+  local origin = pod.cargo_pod_origin
+  if origin and origin.valid and origin.surface.platform and pod.surface.planet then
+    diary.add(origin.force, "first-delivery")
+  end
+end
+
+local AUTONOMOUS_MACHINES = 30
+local DEADLOCK_MACHINES = 10
+local DEADLOCK_SHARE = 0.8
+
+--- Раз в 5 минут: база на автомате, дедлок производства, первый пойманный улей Наувиса.
+local function check_base(force)
+  local working, starving, total = 0, 0, 0
+  for _, surface in pairs(game.surfaces) do
+    if not surface.platform then
+      for _, machine in pairs(surface.find_entities_filtered({ type = "assembling-machine", force = force, limit = 500 })) do
+        total = total + 1
+        local status = machine.status
+        if status == defines.entity_status.working then
+          working = working + 1
+        elseif status == defines.entity_status.item_ingredient_shortage or status == defines.entity_status.no_ingredients then
+          starving = starving + 1
+        end
+      end
+      if force_state(force).seen["capture-nauvis"] == nil and surface.name == "nauvis"
+          and surface.count_entities_filtered({ name = "captive-biter-spawner", force = force, limit = 1 }) > 0 then
+        diary.add(force, "capture-nauvis")
+      end
+    end
+  end
+  if working >= AUTONOMOUS_MACHINES then diary.add(force, "base-autonomous") end
+  if total >= DEADLOCK_MACHINES and starving >= total * DEADLOCK_SHARE then diary.add(force, "deadlock") end
+end
+
+--- Для тестов: проверить базу команды сразу.
+function diary.check_base_now(force)
+  check_base(force)
+end
+
 function diary.on_tick()
+  for _, force in pairs(game.forces) do
+    if force.name ~= "enemy" and force.name ~= "neutral" and #force.players > 0 then check_base(force) end
+  end
   for _, player in pairs(game.connected_players) do
     local ps = player_state(player)
     if player.surface.name == "nauvis" then
