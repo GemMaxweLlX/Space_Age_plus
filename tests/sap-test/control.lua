@@ -589,12 +589,16 @@ steps[240] = function()
   for i = 1, 60 do platform.eject_item({ name = "iron-plate" }, { hub.x + 3, hub.y + i % 5 }, { 0.1, 0 }) end
 end
 
-steps[2600] = function()
-  local platform = storage.echaris_platform
-  if not (platform and platform.valid) then return end
-  local flavored = #platform.find_asteroid_chunks_filtered({ name = "sap-debris-electrified" })
-  log("SAP-TEST INFO echaris chunks: " .. #platform.find_asteroid_chunks_filtered({}))
-  check("debris: echaris orbit gives electrified debris", flavored > 0, flavored)
+for tick = 2400, 2650, 50 do
+  steps[tick] = function()
+    local platform = storage.echaris_platform
+    if not (platform and platform.valid) then return end
+    local flavored = #platform.find_asteroid_chunks_filtered({ name = "sap-debris-electrified" })
+    storage.max_electrified = math.max(storage.max_electrified or 0, flavored)
+    if tick == 2650 then
+      check("debris: echaris orbit gives electrified debris", storage.max_electrified > 0, storage.max_electrified)
+    end
+  end
 end
 
 -- Тик 2700: хардкор «без доставки» на Echaris ----------------------------------------
@@ -643,11 +647,22 @@ steps[3000] = function()
     storage.barrier_units[i] = surface.create_entity({ name = "sap-sentinel", position = { bpos.x + 4 + i, bpos.y }, force = "enemy" })
   end
   -- Стелс: два персонажа, у одного костюм стелса; рядом с каждым — Механит в 12 клетках.
+  local first_pos
   for i, armor in pairs({ "sap-stealth-suit", "modular-armor" }) do
-    local cpos = clear_spot(surface, { 150 + i * 80, -150 })
+    -- Персонажи должны стоять далеко друг от друга, иначе стелс одного уводит врага другого.
+    local cpos
+    for shift = 0, 10 do
+      cpos = clear_spot(surface, { 150 + i * 80 + shift * 60, -150 - shift * 40 })
+      if not first_pos or ((cpos.x - first_pos.x) ^ 2 + (cpos.y - first_pos.y) ^ 2) > 60 ^ 2 then break end
+    end
+    first_pos = first_pos or cpos
     local character = surface.create_entity({ name = "character", position = cpos, force = force })
     character.get_inventory(defines.inventory.character_armor).insert({ name = armor, count = 1 })
-    local unit = surface.create_entity({ name = "sap-annihilator", position = { cpos.x + 12, cpos.y }, force = "enemy" })
+    -- В костюме — враг в 12 клетках (дальше порога 6); без костюма — быстрый враг рядом,
+    -- чтобы рельеф не мешал ему дойти.
+    local distance = armor == "sap-stealth-suit" and 12 or 4
+    local unit = surface.create_entity({ name = armor == "sap-stealth-suit" and "sap-annihilator" or "sap-sentinel",
+                                         position = { cpos.x + distance, cpos.y }, force = "enemy" })
     unit.commandable.set_command({ type = defines.command.attack, target = character })
     storage["stealth_" .. i] = character
   end
@@ -859,6 +874,19 @@ steps[8800] = function()
         serpent.line(fail_result))
   check("llk: no alien technologies offered", not (llk_result.names and string.find(table.concat(llk_result.names, ","), "sap%-alien")))
   local _ = linv
+end
+
+-- Тик 5: проверка прохождения (до любых действий теста) ----------------------------------
+local progression = require("progression")
+steps[5] = function()
+  local stuck, rounds = progression.audit(game.forces.player)
+  log("SAP-TEST INFO progression rounds " .. rounds .. ", unreachable " .. #stuck .. ": " .. table.concat(stuck, ", "))
+  check("progression: every technology reachable", #stuck == 0, #stuck .. " unreachable")
+  -- Самопроверка: без карт «Логистика» должны появиться тупики, иначе проверка ничего не ловит.
+  local stuck_without = progression.audit(game.forces.player, { logistics = true })
+  log("SAP-TEST INFO progression without logistics cards: " .. #stuck_without .. " unreachable, e.g. "
+      .. table.concat({ table.unpack(stuck_without, 1, math.min(5, #stuck_without)) }, ", "))
+  check("progression: audit detects a missing card category", #stuck_without > 0, #stuck_without)
 end
 
 -- Конец ---------------------------------------------------------------------------
