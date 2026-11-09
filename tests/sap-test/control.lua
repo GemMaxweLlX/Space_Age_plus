@@ -256,9 +256,9 @@ steps[100] = function()
   check("solaris: no tungsten", surface.count_entities_filtered({ name = "tungsten-ore" }) == 0)
 
   local hot_pos = surface.find_non_colliding_position("assembling-machine-2", { 10, 10 }, 40, 1)
-  storage.hot_machine = surface.create_entity({ name = "assembling-machine-2", position = hot_pos, force = "player" })
+  storage.hot_machine = surface.create_entity({ name = "assembling-machine-2", position = hot_pos, force = "player", raise_built = true })
   local cool_pos = surface.find_non_colliding_position("assembling-machine-2", { -30, 10 }, 40, 6)
-  storage.cool_machine = surface.create_entity({ name = "assembling-machine-2", position = cool_pos, force = "player" })
+  storage.cool_machine = surface.create_entity({ name = "assembling-machine-2", position = cool_pos, force = "player", raise_built = true })
   surface.create_entity({ name = "sap-radiator", position = { cool_pos.x + 2, cool_pos.y }, force = "player" })
   surface.create_entity({ name = "electric-energy-interface", position = { cool_pos.x, cool_pos.y + 4 }, force = "player" })
   surface.create_entity({ name = "substation", position = { cool_pos.x + 3, cool_pos.y + 3 }, force = "player" })
@@ -355,9 +355,9 @@ steps[140] = function()
 
   -- Криобуря: машина без защиты и машина у криообогревателя.
   local cold_pos = surface.find_non_colliding_position("assembling-machine-2", { 40, 0 }, 40, 6)
-  storage.nv_cold = surface.create_entity({ name = "assembling-machine-2", position = cold_pos, force = "player" })
+  storage.nv_cold = surface.create_entity({ name = "assembling-machine-2", position = cold_pos, force = "player", raise_built = true })
   local warm_pos = surface.find_non_colliding_position("assembling-machine-2", { -40, 0 }, 40, 6)
-  storage.nv_warm = surface.create_entity({ name = "assembling-machine-2", position = warm_pos, force = "player" })
+  storage.nv_warm = surface.create_entity({ name = "assembling-machine-2", position = warm_pos, force = "player", raise_built = true })
   surface.create_entity({ name = "sap-cryo-heater", position = { warm_pos.x + 2.5, warm_pos.y }, force = "player" })
   surface.create_entity({ name = "electric-energy-interface", position = { warm_pos.x, warm_pos.y + 4 }, force = "player" })
   surface.create_entity({ name = "substation", position = { warm_pos.x + 3, warm_pos.y + 3 }, force = "player" })
@@ -369,7 +369,7 @@ steps[140] = function()
     local tiles = {}
     for x = -2, 1 do for y = -2, 1 do tiles[#tiles + 1] = { name = "sap-insulating-foundation", position = { p.x + x, p.y + y } } end end
     surface.set_tiles(tiles)
-    local machine = surface.create_entity({ name = "assembling-machine-2", position = p, force = "player" })
+    local machine = surface.create_entity({ name = "assembling-machine-2", position = p, force = "player", raise_built = true })
     if walls then
       for _, offset in pairs({ { 0, -6 }, { 0, 6 }, { -6, 0 }, { 6, 0 } }) do
         surface.create_entity({ name = "sap-insulated-wall", position = { p.x + offset[1], p.y + offset[2] }, force = "player" })
@@ -887,6 +887,67 @@ steps[5] = function()
   log("SAP-TEST INFO progression without logistics cards: " .. #stuck_without .. " unreachable, e.g. "
       .. table.concat({ table.unpack(stuck_without, 1, math.min(5, #stuck_without)) }, ", "))
   check("progression: audit detects a missing card category", #stuck_without > 0, #stuck_without)
+end
+
+-- Тики 9000+: замер производительности на большой базе -----------------------------------
+local function grid(surface, name, count, origin, step, force)
+  local placed = 0
+  local side = math.ceil(math.sqrt(count))
+  for i = 0, side * side - 1 do
+    if placed >= count then break end
+    local pos = { origin.x + (i % side) * step, origin.y + math.floor(i / side) * step }
+    if surface.can_place_entity({ name = name, position = pos, force = force }) then
+      surface.create_entity({ name = name, position = pos, force = force, raise_built = true })
+      placed = placed + 1
+    end
+  end
+  return placed
+end
+
+
+steps[9000] = function()
+  local force = game.forces.player
+  local solaris = game.surfaces["solaris"]
+  solaris.request_to_generate_chunks({ 600, 0 }, 4)
+  solaris.force_generate_chunk_requests()
+  local n1 = grid(solaris, "assembling-machine-2", 2000, { x = 500, y = -100 }, 3, force)
+  grid(solaris, "sap-radiator", 200, { x = 501.5, y = -98.5 }, 9, force)
+  local nivar = game.surfaces["nivar"]
+  nivar.request_to_generate_chunks({ 600, 0 }, 4)
+  nivar.force_generate_chunk_requests()
+  local n2 = grid(nivar, "assembling-machine-2", 2000, { x = 500, y = -100 }, 3, force)
+  local echaris = game.surfaces["echaris"]
+  local n3 = grid(echaris, "construction-robot", 1000, { x = 0, y = 0 }, 2, force)
+  grid(echaris, "roboport", 50, { x = -300, y = -300 }, 8, force)
+  grid(echaris, "sap-storm-stabilizer", 100, { x = 300, y = 300 }, 6, force)
+  log(string.format("SAP-TEST INFO bench base: solaris %d, nivar %d machines, echaris %d robots", n1, n2, n3))
+  remote.call("sap-nivar", "set_cryostorm", true)
+end
+
+-- Полный цикл (каждая машина/дрон обработаны один раз): сумма и каждый вызов отдельно.
+local function measure_cycle(label, fn, calls)
+  local total = helpers.create_profiler()
+  local each = {}
+  for i = 1, calls do
+    local p = helpers.create_profiler()
+    fn()
+    p.stop()
+    each[i] = p
+  end
+  total.stop()
+  local line = { "", "SAP-TEST BENCH ", label, " cycle: ", total, " | calls:" }
+  for i = 1, calls do line[#line + 1] = { "", " ", each[i] } end
+  log(line)
+end
+
+steps[9010] = function()
+  -- Первый цикл — прогрев (впервые записываются статусы), меряется второй.
+  for round = 1, 2 do
+    local tag = round == 1 and " (warm-up)" or ""
+    measure_cycle("solaris overheat" .. tag, function() remote.call("sap-solaris", "overheat_tick") end, 5)
+    measure_cycle("nivar cryostorm" .. tag, function() remote.call("sap-nivar", "cryostorm_tick") end, 5)
+    measure_cycle("echaris storm" .. tag, function() remote.call("sap-echaris", "storm_tick") end, 4)
+  end
 end
 
 -- Конец ---------------------------------------------------------------------------

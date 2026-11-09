@@ -12,7 +12,8 @@ local function diary_add(force, key)
   if force and force.valid and remote.interfaces["sap-diary"] then remote.call("sap-diary", "add", force.name, key) end
 end
 
-cryostorm.TICK_INTERVAL = 300
+cryostorm.TICK_INTERVAL = 60 -- пятая часть машин раз в секунду (каждая машина — раз в 5 секунд)
+local PHASES = 5
 
 local SURFACE = "nivar"
 local HEATERS = { ["sap-cryo-heater"] = 8, ["sap-cryo-heater-mk2"] = 12 }
@@ -48,26 +49,11 @@ local STATUS = {
   broken = { diode = defines.entity_status_diode.red, label = { "sap-nivar.status-broken" } },
 }
 
-local function protected_set(surface)
-  local set = {}
-  local function mark(name, radius)
-    for _, source in pairs(surface.find_entities_filtered({ name = name })) do
-      if source.is_connected_to_electric_network() then
-        for _, machine in pairs(surface.find_entities_filtered({
-          type = MACHINE_TYPES, position = source.position, radius = radius,
-        })) do
-          set[machine.unit_number] = true
-        end
-      end
-    end
-  end
-  for name, radius in pairs(HEATERS) do mark(name, radius) end
-  mark(DOME, DOME_RADIUS)
-  return set
-end
 
 --- Множитель скорости замерзания без энергии: фундамент ×0.5, замкнутые стены ×0.5.
-local function passive_factor(surface, machine)
+--- Считается дорого (пять запросов), поэтому кэшируется на минуту.
+local PASSIVE_TTL = 60 * 60
+local function compute_passive_factor(surface, machine)
   local factor = 1
   local p = machine.position
   if surface.get_tile(p.x, p.y).name == FOUNDATION then factor = factor * 0.5 end
@@ -79,6 +65,15 @@ local function passive_factor(surface, machine)
     factor = factor * 0.5
   end
   return factor
+end
+
+local function passive_factor(surface, machine, s)
+  s.passive = s.passive or {}
+  local cached = s.passive[machine.unit_number]
+  if cached and game.tick - cached.tick < PASSIVE_TTL then return cached.value end
+  local value = compute_passive_factor(surface, machine)
+  s.passive[machine.unit_number] = { value = value, tick = game.tick }
+  return value
 end
 
 local function release_packs(surface)
@@ -113,32 +108,126 @@ local function update_storm(surface, s)
   end
 end
 
+-- Зоны защиты: позиции источников раскладываются по клеткам, проверка машины — в Lua.
+-- Расстояние считается до центра машины с запасом в полразмера машины (EXTRA).
+local EXTRA = 1.5
+
+local function build_zones(points, cell_size)
+  local cells = {}
+  for _, p in pairs(points) do
+    local cx, cy = math.floor(p.x / cell_size), math.floor(p.y / cell_size)
+    cells[cx] = cells[cx] or {}
+    local cell = cells[cx][cy] or {}
+    cells[cx][cy] = cell
+    cell[#cell + 1] = p
+  end
+  return cells
+end
+
+local function in_zone(cells, cell_size, x, y)
+  local cx, cy = math.floor(x / cell_size), math.floor(y / cell_size)
+  for dx = -1, 1 do
+    local column = cells[cx + dx]
+    if column then
+      for dy = -1, 1 do
+        for _, p in pairs(column[cy + dy] or {}) do
+          local ddx, ddy, r = p.x - x, p.y - y, p.r + EXTRA
+          if ddx * ddx + ddy * ddy <= r * r then return true end
+        end
+      end
+    end
+  end
+  return false
+end
+
+-- Список машин ведётся по событиям постройки и разборки; раз в RESCAN_CYCLES циклов —
+-- полный пересчёт (на случай построек от других модов без события). Всё в storage.
+local RESCAN_CYCLES = 10
+local MACHINE_SET = {}
+for _, t in pairs(MACHINE_TYPES) do MACHINE_SET[t] = true end
+
+function cryostorm.rescan()
+  local s = state()
+  s.machines = {}
+  local surface = game.get_surface(SURFACE)
+  if not surface then return end
+  for _, machine in pairs(surface.find_entities_filtered({ type = MACHINE_TYPES })) do
+    s.machines[machine.unit_number] = machine
+  end
+end
+
+function cryostorm.track(entity)
+  if entity and entity.valid and MACHINE_SET[entity.type] and entity.surface.name == SURFACE then
+    local s = state()
+    s.machines = s.machines or {}
+    s.machines[entity.unit_number] = entity
+  end
+end
+
+function cryostorm.untrack(entity)
+  if entity and entity.valid and entity.unit_number then
+    local s = state()
+    if s.machines then s.machines[entity.unit_number] = nil end
+    s.cold[entity.unit_number] = nil
+    if s.passive then s.passive[entity.unit_number] = nil end
+  end
+end
+
+local function refresh_zones(surface, s)
+  local points = {}
+  local function add(name, radius)
+    for _, source in pairs(surface.find_entities_filtered({ name = name })) do
+      if source.is_connected_to_electric_network() then
+        points[#points + 1] = { x = source.position.x, y = source.position.y, r = radius }
+      end
+    end
+  end
+  for name, radius in pairs(HEATERS) do add(name, radius) end
+  add(DOME, DOME_RADIUS)
+  s.cell = DOME_RADIUS + EXTRA
+  s.zones = build_zones(points, s.cell)
+end
+
 function cryostorm.on_tick()
   local surface = game.get_surface(SURFACE)
   if not surface then return end
   local s = state()
-  update_storm(surface, s)
-  local protected = s.active and protected_set(surface) or {}
-  local seen = {}
-  for _, machine in pairs(surface.find_entities_filtered({ type = MACHINE_TYPES })) do
-    local id = machine.unit_number
-    seen[id] = true
-    local value = s.cold[id] or 0
-    if s.active and not protected[id] then
-      value = math.min(MAX_COLD, value + passive_factor(surface, machine))
-    else
-      value = math.max(0, value - 3)
-    end
-    s.cold[id] = value
-    local stage = stage_of(value)
-    machine.custom_status = STATUS[stage]
-    machine.disabled_by_script = stage == "stopped" or stage == "broken"
-    if stage == "broken" then
-      machine.damage(machine.max_health * BROKEN_DAMAGE_FRACTION, "neutral", "physical")
-    end
+  s.phase = ((s.phase or -1) + 1) % PHASES
+  if s.phase == 0 or not s.zones then
+    update_storm(surface, s)
+    s.cycles = (s.cycles or 0) + 1
+    if not s.machines or s.cycles % RESCAN_CYCLES == 1 then cryostorm.rescan() end
+    refresh_zones(surface, s)
   end
-  for id in pairs(s.cold) do
-    if not seen[id] then s.cold[id] = nil end
+
+  local phase = s.phase
+  for id, machine in pairs(s.machines) do
+    if id % PHASES == phase then
+      if not machine.valid then
+        s.machines[id] = nil
+        s.cold[id] = nil
+        if s.passive then s.passive[id] = nil end
+      else
+        local p = machine.position
+        local value = s.cold[id] or 0
+        if s.active and not in_zone(s.zones, s.cell, p.x, p.y) then
+          value = math.min(MAX_COLD, value + passive_factor(surface, machine, s))
+        else
+          value = math.max(0, value - 3)
+        end
+        local old_stage = stage_of(s.cold[id] or 0)
+        local first = s.cold[id] == nil
+        s.cold[id] = value
+        local stage = stage_of(value)
+        if stage ~= old_stage or first then
+          machine.custom_status = STATUS[stage]
+          machine.disabled_by_script = stage == "stopped" or stage == "broken"
+        end
+        if stage == "broken" then
+          machine.damage(machine.max_health * BROKEN_DAMAGE_FRACTION, "neutral", "physical")
+        end
+      end
+    end
   end
 end
 

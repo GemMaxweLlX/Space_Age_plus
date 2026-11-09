@@ -9,7 +9,8 @@
 
 local storm = {}
 
-storm.TICK_INTERVAL = 120 -- раз в 2 секунды
+storm.TICK_INTERVAL = 30 -- четверть работы раз в полсекунды (каждый дрон — раз в 2 секунды)
+local PHASES = 4
 
 local SURFACE = "echaris"
 local STABILIZER = "sap-storm-stabilizer"
@@ -37,10 +38,42 @@ local function zone_radius()
   return prototypes.entity[STABILIZER].get_supply_area_distance() + 1
 end
 
-local function protected(surface, position, radius)
-  return surface.count_entities_filtered({
-    name = STABILIZER, position = position, radius = radius, limit = 1,
-  }) > 0
+-- Зоны стабилизаторов: позиции собираются один раз за проверку и раскладываются по клеткам
+-- размером с радиус зоны, чтобы проверка дрона была в Lua, без запроса к игре.
+local function build_zones(surface, radius)
+  local cells = {}
+  for _, stabilizer in pairs(surface.find_entities_filtered({ name = STABILIZER })) do
+    local p = stabilizer.position
+    local cx, cy = math.floor(p.x / radius), math.floor(p.y / radius)
+    local column = cells[cx]
+    if not column then column = {} cells[cx] = column end
+    local cell = column[cy]
+    if not cell then cell = {} column[cy] = cell end
+    cell[#cell + 1] = p.x
+    cell[#cell + 1] = p.y
+  end
+  return cells
+end
+
+local function protected(zones, position, radius)
+  local px, py = position.x, position.y
+  local cx, cy = math.floor(px / radius), math.floor(py / radius)
+  local r2 = radius * radius
+  for dx = -1, 1 do
+    local column = zones[cx + dx]
+    if column then
+      for dy = -1, 1 do
+        local cell = column[cy + dy]
+        if cell then
+          for i = 1, #cell, 2 do
+            local x, y = cell[i] - px, cell[i + 1] - py
+            if x * x + y * y <= r2 then return true end
+          end
+        end
+      end
+    end
+  end
+  return false
 end
 
 -- Модули стабилизаторов -------------------------------------------------------
@@ -88,19 +121,20 @@ end
 
 -- Дроны и роботодоки -----------------------------------------------------------
 
-local function hit_robots(surface, radius)
-  local robots = surface.find_entities_filtered({ type = { "construction-robot", "logistic-robot" } })
-  for _, robot in pairs(robots) do
-    if robot.valid and not PROTECTED_ROBOTS[robot.name] and not protected(surface, robot.position, radius) then
+local function hit_robots(robots, zones, radius, phase)
+  for i = phase + 1, #robots, PHASES do
+    local robot = robots[i]
+    if robot.valid and not PROTECTED_ROBOTS[robot.name] and not protected(zones, robot.position, radius) then
       robot.energy = robot.energy * (1 - ROBOT_ENERGY_DRAIN)
       robot.damage(robot.max_health * ROBOT_DAMAGE_FRACTION, "neutral", "electric")
     end
   end
 end
 
-local function drain_roboports(surface, radius)
-  for _, roboport in pairs(surface.find_entities_filtered({ type = "roboport" })) do
-    if not protected(surface, roboport.position, radius) then
+local function drain_roboports(roboports, zones, radius, phase)
+  for i = phase + 1, #roboports, PHASES do
+    local roboport = roboports[i]
+    if roboport.valid and not protected(zones, roboport.position, radius) then
       roboport.energy = 0
     end
   end
@@ -111,11 +145,22 @@ end
 function storm.on_tick()
   local surface = get_surface()
   if not surface then return end
-  update_level(surface)
-  refresh_all_stabilizers(surface, state().level) -- вдруг модуль вынули вручную
+  -- Работа разбита на 4 части: каждые 30 тиков обрабатывается четверть дронов и роботодоков,
+  -- так что каждый попадает под бурю раз в 2 секунды, а нагрузка размазана.
+  -- Списки дронов, роботодоков и зоны собираются раз в 2 секунды (фаза 0) и хранятся в
+  -- storage, чтобы у всех игроков в мультиплеере было одно и то же.
+  local s = state()
+  s.phase = ((s.phase or -1) + 1) % PHASES
   local radius = zone_radius()
-  hit_robots(surface, radius)
-  drain_roboports(surface, radius)
+  if s.phase == 0 or not s.robots then
+    update_level(surface)
+    refresh_all_stabilizers(surface, s.level) -- вдруг модуль вынули вручную
+    s.zones = build_zones(surface, radius)
+    s.robots = surface.find_entities_filtered({ type = { "construction-robot", "logistic-robot" } })
+    s.roboports = surface.find_entities_filtered({ type = "roboport" })
+  end
+  hit_robots(s.robots, s.zones, radius, s.phase)
+  drain_roboports(s.roboports, s.zones, radius, s.phase)
 end
 
 function storm.on_surface_created(event)

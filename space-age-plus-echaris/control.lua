@@ -36,5 +36,6 @@ script.on_event(defines.events.on_script_trigger_effect, specials.on_script_trig
 
 -- Для автотестов.
 remote.add_interface("sap-echaris", {
+  storm_tick = function() storm.on_tick() end,
   center_alarm = function(center, force_name) return mechanites.center_alarm(center, game.forces[force_name]) end,
 })
