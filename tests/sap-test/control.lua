@@ -991,12 +991,24 @@ steps[29000] = function()
   log("SAP-TEST DONE failures=" .. launches)
 end
 
+-- После загрузки сохранения (MODE=saveload) ранние шаги уже выполнены; отмечаем загрузку.
+script.on_load(function()
+  log("SAP-TEST INFO loaded save, continuing")
+end)
+
+-- Шаги считаются от тика, когда тестовый мод подключили (в MODE=migration карта уже шла).
+script.on_init(function()
+  storage.t0 = game.tick
+  log("SAP-TEST INFO test mod started at tick " .. game.tick)
+end)
+
 script.on_event(defines.events.on_tick, function(event)
-  if event.tick > 50 and event.tick % 30 == 0 then
+  local t = event.tick - (storage.t0 or 0)
+  if t > 50 and t % 30 == 0 then
     local ok, err = pcall(try_launch)
     if not ok then check("launch", false, err) end
   end
-  for _, step in pairs(step_lists[event.tick] or {}) do
+  for _, step in pairs(step_lists[t] or {}) do
     local ok, err = pcall(step)
     if not ok then check("step " .. event.tick, false, err) end
   end
