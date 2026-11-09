@@ -565,6 +565,73 @@ steps[4200] = function()
   remote.call("sap-core", "no_delivery_override", "echaris", false)
 end
 
+-- Тики 3000+: силовой барьер, стелс, взлом, тихий захват ---------------------------
+local function clear_spot(surface, near, size)
+  return surface.find_non_colliding_position("sap-control-server-heavy", near, 200, size or 4, true)
+end
+
+steps[3000] = function()
+  local surface = game.surfaces["echaris"]
+  local force = game.forces.player
+  -- Барьер
+  local bpos = clear_spot(surface, { -150, 150 })
+  local barrier = surface.create_entity({ name = "sap-force-barrier", position = bpos, force = force })
+  barrier.energy = 50000000
+  storage.barrier, storage.barrier_units = barrier, {}
+  for i = 1, 3 do
+    storage.barrier_units[i] = surface.create_entity({ name = "sap-sentinel", position = { bpos.x + 4 + i, bpos.y }, force = "enemy" })
+  end
+  -- Стелс: два персонажа, у одного костюм стелса; рядом с каждым — Механит в 12 клетках.
+  for i, armor in pairs({ "sap-stealth-suit", "modular-armor" }) do
+    local cpos = clear_spot(surface, { 150 + i * 80, -150 })
+    local character = surface.create_entity({ name = "character", position = cpos, force = force })
+    character.get_inventory(defines.inventory.character_armor).insert({ name = armor, count = 1 })
+    local unit = surface.create_entity({ name = "sap-annihilator", position = { cpos.x + 12, cpos.y }, force = "enemy" })
+    unit.commandable.set_command({ type = defines.command.attack, target = character })
+    storage["stealth_" .. i] = character
+  end
+  -- Взлом
+  force.technologies["sap-mechanite-hacking"].researched = true
+  local hpos = clear_spot(surface, { 150, 150 })
+  storage.hack_units = {}
+  for i = 1, 8 do
+    storage.hack_units[i] = surface.create_entity({ name = "sap-sentinel", position = { hpos.x + (i % 3), hpos.y + math.floor(i / 3) },
+                                                   force = "enemy" })
+  end
+  local thrower = surface.create_entity({ name = "character", position = { hpos.x - 10, hpos.y }, force = force })
+  surface.create_entity({ name = "sap-emp-grenade", position = { hpos.x - 9, hpos.y }, target = { hpos.x + 1, hpos.y + 1 },
+                          speed = 0.3, source = thrower, force = force })
+  -- Тихий захват
+  local cpos = clear_spot(surface, { -150, -150 })
+  local center = surface.create_entity({ name = "sap-center-data", position = cpos, force = "neutral" })
+  for i = 1, 3 do surface.create_entity({ name = "sap-sentinel", position = { cpos.x + 20 + i, cpos.y }, force = "enemy" }) end
+  local loud = remote.call("sap-echaris", "center_alarm", center, "player")
+  force.technologies["sap-silent-capture-protocol"].researched = true
+  local quiet = remote.call("sap-echaris", "center_alarm", center, "player")
+  check("silent capture: alarm without protocol", loud > 0, loud)
+  check("silent capture: no alarm with protocol", quiet == 0, quiet)
+end
+
+steps[3120] = function()
+  local alive = 0
+  for _, u in pairs(storage.barrier_units) do if u.valid then alive = alive + 1 end end
+  check("barrier: kills mechanites in range", alive == 0, alive)
+  check("barrier: spends charge", storage.barrier.valid and storage.barrier.energy <= 50000000 - 15000000,
+        storage.barrier.valid and storage.barrier.energy)
+  local hacked = 0
+  for _, u in pairs(storage.hack_units) do if u.valid and u.force.name == "player" then hacked = hacked + 1 end end
+  check("hacking: EMP grenade turns mechanites", hacked > 0, hacked)
+end
+
+steps[3900] = function()
+  local stealthy, plain = storage.stealth_1, storage.stealth_2
+  local s_hp = stealthy and stealthy.valid and stealthy.health or 0
+  local p_hp = plain and plain.valid and plain.health or 0
+  log(string.format("SAP-TEST INFO stealth health %.0f, plain health %.0f", s_hp, p_hp))
+  check("stealth: suit keeps mechanites away", stealthy and stealthy.valid and s_hp == stealthy.max_health, s_hp)
+  check("stealth: without suit gets attacked", not (plain and plain.valid) or p_hp < plain.max_health, p_hp)
+end
+
 -- Конец ---------------------------------------------------------------------------
 -- Мусор проверяем раньше: куски медленно пролетают мимо и улетают с карты.
 steps[2900] = function()

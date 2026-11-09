@@ -28,3 +28,13 @@ script.on_event(defines.events.on_entity_died, mechanites.on_entity_died, {
   { filter = "name", name = "sap-sentinel" },
   { filter = "name", name = "sap-overseer" },
 })
+
+-- Силовой барьер, стелс, взлом
+local specials = require("scripts.specials")
+script.on_nth_tick(specials.TICK_INTERVAL, specials.on_tick)
+script.on_event(defines.events.on_script_trigger_effect, specials.on_script_trigger_effect)
+
+-- Для автотестов.
+remote.add_interface("sap-echaris", {
+  center_alarm = function(center, force_name) return mechanites.center_alarm(center, game.forces[force_name]) end,
+})

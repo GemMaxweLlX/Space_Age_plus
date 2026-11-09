@@ -118,9 +118,15 @@ function mechanites.on_gui_opened(event)
   local servers = entity.surface.count_entities_filtered({
     name = SERVERS, position = entity.position, radius = CENTER_LOCK_RADIUS, limit = 1,
   })
-  if servers == 0 and entity.name == "sap-center-suppression" then
+  if servers == 0 then
     local player = game.get_player(event.player_index)
-    if player then diary_add(player.force, "find-echaris-military") end
+    if player and entity.name == "sap-center-suppression" then diary_add(player.force, "find-echaris-military") end
+    local s = state()
+    s.opened_centers = s.opened_centers or {}
+    if player and not s.opened_centers[entity.unit_number] then
+      s.opened_centers[entity.unit_number] = true
+      mechanites.center_alarm(entity, player.force)
+    end
   end
   if servers > 0 then
     local player = game.get_player(event.player_index)
@@ -141,6 +147,18 @@ local function attack(unit, position)
       distraction = defines.distraction.by_enemy,
     })
   end
+end
+
+--- Тревога при открытии центра: Механиты рядом идут к нему. Протокол тихого захвата её отменяет.
+function mechanites.center_alarm(center, force)
+  local protocol = force.technologies["sap-silent-capture-protocol"]
+  if protocol and protocol.researched then return 0 end
+  local units = center.surface.find_entities_filtered({
+    type = "unit", force = "enemy", position = center.position, radius = ALARM_RADIUS,
+  })
+  for _, unit in pairs(units) do attack(unit, center.position) end
+  force.print({ "sap-mechanites.center-alarm", #units })
+  return #units
 end
 
 function mechanites.on_entity_damaged(event)
