@@ -25,4 +25,11 @@ tools/package.sh
 Проверка Lua: `luacheck .` (настройки в `.luacheckrc`).
 
 ## Документы
-- [Мастер документ v0.3 (HTML)](docs/space_age_plus_MASTER.html)
+- [Мастер документ v0.3 (Markdown)](docs/design/README.md) — удобно читать на GitHub.
+- [Мастер документ v0.3 (HTML)](docs/space_age_plus_MASTER.html) — оригинал.
+
+После обновления HTML Markdown пересобирается так:
+
+```bash
+python3 -I tools/html2md.py docs/space_age_plus_MASTER.html docs/design
+```
