@@ -5,6 +5,7 @@ local exploration = require("scripts.exploration")
 local techtree = require("scripts.techtree")
 local quality_bonus = require("scripts.quality_bonus")
 local capture = require("scripts.capture")
+local condensing = require("scripts.condensing")
 
 script.on_init(function()
   oxygen.on_init()
@@ -74,3 +75,6 @@ remote.add_interface("sap-core", {
 
 -- Захват ульев SA+
 script.on_event(defines.events.on_script_trigger_effect, capture.on_script_trigger_effect)
+
+-- Конденсация пара (паровая турбина Mk2, мега-турбина)
+script.on_nth_tick(condensing.TICK_INTERVAL + 2, condensing.on_tick)

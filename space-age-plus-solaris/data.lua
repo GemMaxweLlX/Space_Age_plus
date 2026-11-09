@@ -6,4 +6,5 @@ sap.register_oxygen_planet("solaris", { solution = "generator" })
 
 require("prototypes.planet")
 require("prototypes.content")
+require("prototypes.power")
 require("prototypes.creatures")

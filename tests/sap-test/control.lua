@@ -443,6 +443,44 @@ steps[2500] = function()
   check("capture: fed captive nest produces scales", produced > 0, produced)
 end
 
+-- Тики 210+: сверхбойлер и мега-турбина ---------------------------------------------
+steps[210] = function()
+  local surface = game.surfaces["solaris"]
+  local bpos = surface.find_non_colliding_position("sap-super-boiler", { 0, 120 }, 80, 4)
+  local boiler = surface.create_entity({ name = "sap-super-boiler", position = bpos, force = "player" })
+  local catcher = surface.create_entity({ name = "sap-ray-catcher",
+    position = surface.find_non_colliding_position("sap-ray-catcher", { bpos.x + 5, bpos.y }, 10, 1), force = "player" })
+  storage.sb_boiler, storage.sb_start = boiler, boiler.temperature
+  remote.call("sap-solaris", "charge_catcher", catcher, 5000000000)
+
+  local tpos = surface.find_non_colliding_position("sap-mega-turbine", { 80, 120 }, 80, 6)
+  local turbine = surface.create_entity({ name = "sap-mega-turbine", position = tpos, force = "player" })
+  local load = surface.create_entity({ name = "electric-energy-interface", position = { tpos.x + 6, tpos.y }, force = "player" })
+  load.power_production = 0
+  load.power_usage = 50000000 / 60
+  load.electric_buffer_size = 100000000
+  surface.create_entity({ name = "substation", position = { tpos.x + 4, tpos.y + 4 }, force = "player" })
+  local tank = surface.create_entity({ name = "storage-tank",
+    position = surface.find_non_colliding_position("storage-tank", { tpos.x - 4, tpos.y }, 6, 1), force = "player" })
+  storage.mt_turbine, storage.mt_tank = turbine, tank
+end
+
+for tick = 220, 800, 20 do
+  steps[tick] = function()
+    local turbine = storage.mt_turbine
+    if turbine and turbine.valid then turbine.insert_fluid({ name = "steam", amount = 200, temperature = 500 }) end
+  end
+end
+
+steps[810] = function()
+  local boiler = storage.sb_boiler
+  check("solaris: catcher heats super boiler", boiler and boiler.valid and boiler.temperature > storage.sb_start + 50,
+        boiler and boiler.valid and (storage.sb_start .. " -> " .. boiler.temperature))
+  local tank = storage.mt_tank
+  local water = tank and tank.valid and tank.get_fluid_count("water") or 0
+  check("solaris: mega turbine returns water", water > 0, water)
+end
+
 -- Конец ---------------------------------------------------------------------------
 -- Мусор проверяем раньше: куски медленно пролетают мимо и улетают с карты.
 steps[2900] = function()

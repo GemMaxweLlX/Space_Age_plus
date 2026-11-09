@@ -83,6 +83,21 @@ function api.register_explorable_planet(planet, opts)
   proto.data[planet] = { discovery_tech = opts.discovery_tech, parent = opts.parent }
 end
 
+api.CONDENSING = "sap-condensing-generators"
+
+--- Генератор возвращает часть пара водой в соседнюю трубу или бак (docs: паровая турбина
+--- Mk2, мега-турбина — «90% воды»). Обработка — scripts/condensing.lua.
+--- @param generator string имя прототипа generator
+--- @param ratio number доля пара, которая возвращается водой (0.9)
+function api.register_condensing_generator(generator, ratio)
+  local proto = data.raw["mod-data"] and data.raw["mod-data"][api.CONDENSING]
+  if not proto then
+    data:extend({ { type = "mod-data", name = api.CONDENSING, data = {} } })
+    proto = data.raw["mod-data"][api.CONDENSING]
+  end
+  proto.data[generator] = ratio
+end
+
 api.CAPTURABLE = "sap-capturable-nests"
 
 --- Захват ульев SA+ (docs: Глобальные механики → Захват ульев SA+).
