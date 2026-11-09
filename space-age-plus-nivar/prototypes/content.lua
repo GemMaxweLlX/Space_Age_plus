@@ -121,20 +121,26 @@ data:extend({
   }),
   recipe({
     name = "sap-cryo-heater", energy_required = 5,
-    ingredients = { { type = "item", name = "heat-pipe", amount = 4 }, { type = "item", name = "sap-cryolite", amount = 5 } },
+    ingredients = {
+      { type = "item", name = "heat-pipe", amount = 4 }, { type = "item", name = "sap-cryolite", amount = 5 },
+      { type = "item", name = "lithium-plate", amount = 2 }, -- ресурсы Аквило нужны на Nivar (N4)
+    },
     results = { { type = "item", name = "sap-cryo-heater", amount = 1 } },
   }),
   recipe({
     name = "sap-cryo-dome", energy_required = 10,
     ingredients = {
       { type = "item", name = "sap-cryo-heater", amount = 4 }, { type = "item", name = "processing-unit", amount = 10 },
-      { type = "item", name = "sap-dark-ice", amount = 20 },
+      { type = "item", name = "sap-dark-ice", amount = 20 }, { type = "item", name = "lithium-plate", amount = 10 },
     },
     results = { { type = "item", name = "sap-cryo-dome", amount = 1 } },
   }),
   recipe({
     name = "sap-cryo-concentrator", energy_required = 2,
-    ingredients = { { type = "item", name = "sap-cryolite", amount = 1 }, { type = "item", name = "steel-plate", amount = 1 } },
+    ingredients = {
+      { type = "item", name = "sap-cryolite", amount = 1 }, { type = "item", name = "steel-plate", amount = 1 },
+      { type = "item", name = "lithium-plate", amount = 1 },
+    },
     results = { { type = "item", name = "sap-cryo-concentrator", amount = 1 } },
   }),
   recipe({

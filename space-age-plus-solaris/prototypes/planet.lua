@@ -43,7 +43,14 @@ for _, old in pairs({ "tungsten-ore", "calcite", "coal" }) do
   names["entity:" .. old .. ":probability"] = nil
   names["entity:" .. old .. ":richness"] = nil
 end
+-- Вулканический газ вместо серной кислоты: те же места, что у гейзеров Вулкануса.
+names["entity:sap-volcanic-vent:probability"] = names["entity:sulfuric-acid-geyser:probability"]
+names["entity:sap-volcanic-vent:richness"] = names["entity:sulfuric-acid-geyser:richness"]
+names["entity:sulfuric-acid-geyser:probability"] = nil
+names["entity:sulfuric-acid-geyser:richness"] = nil
 local entity_settings = mgs.autoplace_settings.entity.settings
+entity_settings["sulfuric-acid-geyser"] = nil
+entity_settings["sap-volcanic-vent"] = {}
 entity_settings["tungsten-ore"] = nil
 entity_settings["calcite"] = nil
 entity_settings["coal"] = nil

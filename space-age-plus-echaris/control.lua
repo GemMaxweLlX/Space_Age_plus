@@ -27,7 +27,13 @@ script.on_event(defines.events.on_entity_damaged, mechanites.on_entity_damaged,
 script.on_event(defines.events.on_entity_died, mechanites.on_entity_died, {
   { filter = "name", name = "sap-sentinel" },
   { filter = "name", name = "sap-overseer" },
+  { filter = "name", name = "sap-control-server" },
+  { filter = "name", name = "sap-control-server-heavy" },
 })
+script.on_nth_tick(mechanites.PATROL_INTERVAL + 5, function()
+  mechanites.on_patrol_tick()
+  mechanites.reclaim(false)
+end)
 
 -- Силовой барьер, стелс, взлом
 local specials = require("scripts.specials")
@@ -37,5 +43,6 @@ script.on_event(defines.events.on_script_trigger_effect, specials.on_script_trig
 -- Для автотестов.
 remote.add_interface("sap-echaris", {
   storm_tick = function() storm.on_tick() end,
+  reclaim_now = function() return mechanites.reclaim(true) end,
   center_alarm = function(center, force_name) return mechanites.center_alarm(center, game.forces[force_name]) end,
 })

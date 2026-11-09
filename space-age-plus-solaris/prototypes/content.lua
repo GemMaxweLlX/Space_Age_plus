@@ -39,6 +39,32 @@ local ore, ore_item = resource("sap-magmatic-ore", "tungsten-ore", "tungsten-ore
 local crystal, crystal_item = resource("sap-heat-resistant-crystal", "calcite", "calcite", { r = 1, g = 0.9, b = 0.4, a = 1 })
 data:extend({ ore, ore_item, crystal, crystal_item })
 
+-- Вулканический газ и расплавленный металл (docs: Solaris → Ресурсы) ----------------------
+local GAS_COLOR = { r = 0.8, g = 0.5, b = 0.3 }
+local METAL_COLOR = { r = 1, g = 0.45, b = 0.15 }
+local vent = util.table.deepcopy(data.raw.resource["sulfuric-acid-geyser"])
+vent.name = "sap-volcanic-vent"
+vent.icon = nil
+vent.icons = tinted("__space-age__/graphics/icons/sulfuric-acid-geyser.png")
+vent.minable.results = { { type = "fluid", name = "sap-volcanic-gas", amount_min = 10, amount_max = 10 } }
+vent.minable.result = nil
+vent.autoplace = { probability_expression = 0 } -- место задаёт карта Solaris
+data:extend({
+  vent,
+  {
+    type = "fluid", name = "sap-volcanic-gas", subgroup = "fluid", order = "z[sap]-a",
+    icons = tinted("__base__/graphics/icons/fluid/petroleum-gas.png"),
+    default_temperature = 400, max_temperature = 400, gas_temperature = 0,
+    base_color = GAS_COLOR, flow_color = GAS_COLOR,
+  },
+  {
+    type = "fluid", name = "sap-molten-metal", subgroup = "fluid", order = "z[sap]-b",
+    icons = tinted("__space-age__/graphics/icons/fluid/molten-iron.png"),
+    default_temperature = 1600, max_temperature = 2000,
+    base_color = METAL_COLOR, flow_color = METAL_COLOR,
+  },
+})
+
 -- Материалы -------------------------------------------------------------------------
 
 data:extend({
@@ -68,12 +94,28 @@ data:extend({
     main_product = "molten-iron",
   },
   {
+    type = "recipe", name = "sap-molten-metal", categories = { "metallurgy" },
+    enabled = false, energy_required = 8,
+    ingredients = {
+      { type = "item", name = "sap-magmatic-ore", amount = 10 },
+      { type = "fluid", name = "sap-volcanic-gas", amount = 50 },
+    },
+    results = { { type = "fluid", name = "sap-molten-metal", amount = 200 } },
+  },
+  {
+    type = "recipe", name = "sap-volcanic-gas-separation", categories = { "chemistry" },
+    icons = tinted("__base__/graphics/icons/fluid/sulfuric-acid.png"),
+    enabled = false, energy_required = 2,
+    ingredients = { { type = "fluid", name = "sap-volcanic-gas", amount = 50 }, { type = "fluid", name = "water", amount = 20 } },
+    results = { { type = "fluid", name = "sulfuric-acid", amount = 40 }, { type = "item", name = "sulfur", amount = 1 } },
+    main_product = "sulfuric-acid",
+  },
+  {
     type = "recipe", name = "sap-heat-resistant-alloy", categories = { "metallurgy" },
     enabled = false, energy_required = 8,
     ingredients = {
-      { type = "item", name = "sap-magmatic-ore", amount = 4 },
       { type = "item", name = "sap-heat-resistant-crystal", amount = 2 },
-      { type = "fluid", name = "molten-iron", amount = 40 },
+      { type = "fluid", name = "sap-molten-metal", amount = 40 },
     },
     results = { { type = "item", name = "sap-heat-resistant-alloy", amount = 2 } },
   },
@@ -83,7 +125,7 @@ data:extend({
     ingredients = {
       { type = "item", name = "iron-plate", amount = 2 },
       { type = "item", name = "sap-heat-resistant-crystal", amount = 1 },
-      { type = "fluid", name = "sulfuric-acid", amount = 20 },
+      { type = "fluid", name = "sap-volcanic-gas", amount = 30 },
     },
     results = { { type = "item", name = "sap-thermite", amount = 2 } },
   },
@@ -170,7 +212,8 @@ local function tech(name, icon, recipes, count, prereqs)
 end
 
 -- Базовая переработка открывается вместе с полётом: без неё на Solaris не выжить.
-for _, r in pairs({ "sap-magmatic-ore-melting", "sap-heat-resistant-alloy", "sap-radiator" }) do
+for _, r in pairs({ "sap-magmatic-ore-melting", "sap-molten-metal", "sap-volcanic-gas-separation",
+                    "sap-heat-resistant-alloy", "sap-radiator" }) do
   table.insert(data.raw.technology["sap-planet-discovery-solaris"].effects, { type = "unlock-recipe", recipe = r })
 end
 

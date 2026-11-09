@@ -7,3 +7,4 @@ Date: 2026-11-09
     - Storm stabilizer and EMP filter for the oxygen collector.
     - Hardcore: no platform delivery (cargo pods return to the hub).
     - Force barrier and Mk2, stealth suit, silent capture protocol, Mechanite hacking.
+    - Mechanites patrol around their servers and reclaim zones left without a force barrier after 15 minutes.

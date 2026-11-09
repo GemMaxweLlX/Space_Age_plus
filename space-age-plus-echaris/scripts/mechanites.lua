@@ -178,7 +178,9 @@ end
 function mechanites.on_entity_died(event)
   local entity = event.entity
   if not (entity and entity.valid) then return end
-  if entity.name == "sap-sentinel" then
+  if entity.name == "sap-control-server" or entity.name == "sap-control-server-heavy" then
+    mechanites.on_server_died(entity)
+  elseif entity.name == "sap-sentinel" then
     state().called[entity.unit_number] = nil
   elseif entity.name == "sap-overseer" then
     local units = entity.surface.find_entities_filtered({
@@ -229,6 +231,77 @@ function mechanites.on_tick()
     process_queue(surface)
     emp(surface)
   end
+end
+
+-- Патрули и отвоевание зон -----------------------------------------------------------
+-- Механиты рядом с серверами ходят по зоне. Если игрок уничтожил серверы зоны и не поставил
+-- силовой барьер, через RECLAIM_TICKS Механиты возвращают зону: появляется новый сервер.
+
+mechanites.PATROL_INTERVAL = 60 * 60
+local PATROL_SERVERS = 10
+local PATROL_UNITS = 4
+local PATROL_RADIUS = 40
+local RECLAIM_TICKS = 15 * 60 * 60
+local ZONE_RADIUS = 40
+local BARRIERS = { "sap-force-barrier", "sap-force-barrier-mk2" }
+
+function mechanites.on_patrol_tick()
+  local surface = game.get_surface(SURFACE)
+  if not surface then return end
+  local servers = surface.find_entities_filtered({ name = SERVERS })
+  for _ = 1, math.min(PATROL_SERVERS, #servers) do
+    local server = servers[math.random(1, #servers)]
+    local units = surface.find_entities_filtered({
+      type = "unit", force = server.force, position = server.position, radius = 20, limit = PATROL_UNITS,
+    })
+    for _, unit in pairs(units) do
+      if unit.commandable then
+        local angle = math.random() * 2 * math.pi
+        unit.commandable.set_command({
+          type = defines.command.go_to_location,
+          destination = { server.position.x + math.cos(angle) * PATROL_RADIUS,
+                          server.position.y + math.sin(angle) * PATROL_RADIUS },
+          distraction = defines.distraction.by_enemy, radius = 4,
+        })
+      end
+    end
+  end
+end
+
+function mechanites.on_server_died(entity)
+  local s = state()
+  s.lost_zones = s.lost_zones or {}
+  s.lost_zones[#s.lost_zones + 1] = { position = entity.position, tick = game.tick, name = entity.name }
+end
+
+--- Проверяет потерянные зоны; force_now — для тестов (не ждать таймер).
+function mechanites.reclaim(force_now)
+  local surface = game.get_surface(SURFACE)
+  local s = state()
+  if not (surface and s.lost_zones) then return 0 end
+  local remaining, reclaimed = {}, 0
+  for _, zone in pairs(s.lost_zones) do
+    local secured = surface.count_entities_filtered({
+      name = BARRIERS, position = zone.position, radius = ZONE_RADIUS, limit = 1,
+    }) > 0
+    local occupied = surface.count_entities_filtered({
+      name = SERVERS, position = zone.position, radius = ZONE_RADIUS, limit = 1,
+    }) > 0
+    -- Если барьер держит зону (или Механиты уже вернулись), запись просто отбрасывается.
+    if not (secured or occupied) then
+      if force_now or game.tick - zone.tick >= RECLAIM_TICKS then
+        if place(surface, zone.name, zone.position, 16, "enemy") then
+          reclaimed = reclaimed + 1
+          game.forces.player.print({ "sap-mechanites.zone-reclaimed",
+            string.format("[gps=%d,%d,%s]", zone.position.x, zone.position.y, SURFACE) })
+        end
+      else
+        remaining[#remaining + 1] = zone
+      end
+    end
+  end
+  s.lost_zones = remaining
+  return reclaimed
 end
 
 function mechanites.on_wave_tick()

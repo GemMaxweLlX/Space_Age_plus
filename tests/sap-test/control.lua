@@ -632,7 +632,14 @@ end
 
 -- Тики 3000+: силовой барьер, стелс, взлом, тихий захват ---------------------------
 local function clear_spot(surface, near, size)
-  return surface.find_non_colliding_position("sap-control-server-heavy", near, 200, size or 4, true)
+  -- Если рядом места нет — ищем всё дальше по спирали.
+  for attempt = 0, 12 do
+    local angle = attempt * 1.3
+    local p = { near[1] + math.cos(angle) * attempt * 60, near[2] + math.sin(angle) * attempt * 60 }
+    local found = surface.find_non_colliding_position("sap-control-server-heavy", p, 200, size or 4, true)
+    if found then return found end
+  end
+  error("no free spot near " .. serpent.line(near))
 end
 
 steps[3000] = function()
@@ -651,9 +658,15 @@ steps[3000] = function()
   for i, armor in pairs({ "sap-stealth-suit", "modular-armor" }) do
     -- Персонажи должны стоять далеко друг от друга, иначе стелс одного уводит врага другого.
     local cpos
-    for shift = 0, 10 do
+    for shift = 0, 30 do
       cpos = clear_spot(surface, { 150 + i * 80 + shift * 60, -150 - shift * 40 })
-      if not first_pos or ((cpos.x - first_pos.x) ^ 2 + (cpos.y - first_pos.y) ^ 2) > 60 ^ 2 then break end
+      -- Подальше от зон Механитов: их патрули законно находят игрока и в костюме.
+      local near_zone = surface.count_entities_filtered({
+        name = { "sap-control-server", "sap-control-server-heavy" }, position = cpos, radius = 90, limit = 1,
+      }) > 0
+      if not near_zone and (not first_pos or ((cpos.x - first_pos.x) ^ 2 + (cpos.y - first_pos.y) ^ 2) > 60 ^ 2) then
+        break
+      end
     end
     first_pos = first_pos or cpos
     local character = surface.create_entity({ name = "character", position = cpos, force = force })
@@ -948,6 +961,54 @@ steps[9010] = function()
     measure_cycle("nivar cryostorm" .. tag, function() remote.call("sap-nivar", "cryostorm_tick") end, 5)
     measure_cycle("echaris storm" .. tag, function() remote.call("sap-echaris", "storm_tick") end, 4)
   end
+end
+
+-- Тики 9500+: мелочи из документа -----------------------------------------------------------
+steps[9500] = function()
+  -- Отвоевание зон: зона без барьера возвращается Механитам, зона с барьером — нет.
+  local echaris = game.surfaces["echaris"]
+  local function server_at(near)
+    local pos = clear_spot(echaris, near, 4)
+    return echaris.create_entity({ name = "sap-control-server", position = pos, force = "enemy" })
+  end
+  local open_zone = server_at({ 400, 400 })
+  local guarded = server_at({ -400, 400 })
+  local open_pos, guarded_pos = open_zone.position, guarded.position
+  echaris.create_entity({ name = "sap-force-barrier",
+    position = echaris.find_non_colliding_position("sap-force-barrier", { guarded_pos.x + 12, guarded_pos.y }, 20, 1),
+    force = "player" })
+  open_zone.die("player")
+  guarded.die("player")
+  local reclaimed = remote.call("sap-echaris", "reclaim_now")
+  local back_open = echaris.count_entities_filtered({ name = "sap-control-server", position = open_pos, radius = 20 })
+  local back_guarded = echaris.count_entities_filtered({ name = "sap-control-server", position = guarded_pos, radius = 20 })
+  check("mechanites: zone without barrier reclaimed", back_open == 1, back_open .. " (reclaimed " .. reclaimed .. ")")
+  check("mechanites: zone with barrier stays", back_guarded == 0, back_guarded)
+
+  -- Solaris: вулканические источники вместо гейзеров кислоты.
+  local solaris = game.surfaces["solaris"]
+  local vents = solaris.count_entities_filtered({ name = "sap-volcanic-vent" })
+  check("solaris: volcanic vents placed", vents > 0, vents)
+  check("solaris: no sulfuric acid geysers", solaris.count_entities_filtered({ name = "sulfuric-acid-geyser" }) == 0)
+  local uses_metal = false
+  for _, i in pairs(prototypes.recipe["sap-heat-resistant-alloy"].ingredients) do
+    if i.name == "sap-molten-metal" then uses_metal = true end
+  end
+  check("solaris: alloy made from molten metal", uses_metal)
+
+  -- Nivar: пещерные гнёзда просыпаются от криобури; ресурсы Аквило в рецептах.
+  local caves = game.surfaces["nivar-caves"]
+  local npos = caves.find_non_colliding_position("sap-cave-nest", { 60, 60 }, 60, 2, true)
+  caves.create_entity({ name = "sap-cave-nest", position = npos, force = "enemy" })
+  caves.create_entity({ name = "wooden-chest",
+    position = caves.find_non_colliding_position("wooden-chest", { npos.x + 25, npos.y }, 20, 1), force = "player" })
+  local woken = remote.call("sap-nivar", "wake_caves")
+  check("nivar: cryostorm wakes cave creatures", woken > 0, woken)
+  local lithium = false
+  for _, i in pairs(prototypes.recipe["sap-cryo-heater"].ingredients) do
+    if i.name == "lithium-plate" then lithium = true end
+  end
+  check("nivar: needs Aquilo lithium (N4)", lithium)
 end
 
 -- Конец ---------------------------------------------------------------------------

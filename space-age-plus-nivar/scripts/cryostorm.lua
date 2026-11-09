@@ -95,6 +95,33 @@ local function release_packs(surface)
   end
 end
 
+-- Пещерные существа слепые, но хорошо слышат: вибрации криобури наверху будят пещерные
+-- гнёзда, и Иней идёт к постройкам игрока в пещерах (N3).
+local CAVE_PACK = 3
+local function wake_caves()
+  local caves = game.get_surface("nivar-caves")
+  if not caves then return 0 end
+  local woken = 0
+  for _, nest in pairs(caves.find_entities_filtered({ name = "sap-cave-nest" })) do
+    local target = caves.find_entities_filtered({
+      force = "player", position = nest.position, radius = PACK_RADIUS, limit = 1,
+      type = { "assembling-machine", "furnace", "mining-drill", "electric-pole", "container", "linked-container", "lamp" },
+    })[1]
+    if target then
+      for _ = 1, CAVE_PACK do
+        local position = caves.find_non_colliding_position("sap-frost", nest.position, 10, 1)
+        local unit = position and caves.create_entity({ name = "sap-frost", position = position, force = nest.force })
+        if unit and unit.commandable then
+          unit.commandable.set_command({ type = defines.command.attack_area, destination = target.position, radius = 16 })
+          woken = woken + 1
+        end
+      end
+    end
+  end
+  return woken
+end
+cryostorm.wake_caves = wake_caves
+
 local function update_storm(surface, s)
   if game.tick < s.next_change then return end
   s.active = not s.active
@@ -102,6 +129,7 @@ local function update_storm(surface, s)
     s.next_change = game.tick + math.random(STORM_MIN, STORM_MAX)
     game.forces.player.print({ "sap-nivar.cryostorm-start" })
     release_packs(surface)
+    wake_caves()
   else
     s.next_change = game.tick + math.random(CALM_MIN, CALM_MAX)
     game.forces.player.print({ "sap-nivar.cryostorm-end" })

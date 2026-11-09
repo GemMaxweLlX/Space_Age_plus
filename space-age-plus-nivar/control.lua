@@ -46,6 +46,7 @@ end
 remote.add_interface("sap-nivar", {
   set_cryostorm = function(active) cryostorm.set_active(active) end,
   cryostorm_tick = function() cryostorm.on_tick() end,
+  wake_caves = function() return cryostorm.wake_caves() end,
   is_cryostorm = function() return storage.cryostorm ~= nil and storage.cryostorm.active == true end,
   partner_of = function(entity) return caves.partner_of(entity) end,
 })

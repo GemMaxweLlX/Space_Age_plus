@@ -8,3 +8,4 @@ Date: 2026-11-09
     - Machine overheating with cooling radiators.
     - Scorch and Magmar nests, solitary Molten; aggressive creatures hardcore setting.
     - Improved delivery capsule: cargo pods cannot land on Solaris without it (S4).
+    - Volcanic vents with volcanic gas replace sulfuric acid geysers; molten metal for the heat-resistant alloy.
