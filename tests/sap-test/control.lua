@@ -27,6 +27,12 @@ steps[10] = function()
     check("entity " .. name, prototypes.entity[name] ~= nil)
   end
   check("planet echaris", game.planets["echaris"] ~= nil)
+  local uses = {}
+  for _, ingredient in pairs(prototypes.recipe["sap-logistic-robot-mk2"].ingredients) do uses[ingredient.name] = true end
+  check("I1: echaris uses nivalite when nivar installed", uses["sap-nivalite"] == true)
+  uses = {}
+  for _, ingredient in pairs(prototypes.recipe["sap-solar-panel-mk2"].ingredients) do uses[ingredient.name] = true end
+  check("I1: echaris uses heat crystals when solaris installed", uses["sap-heat-resistant-crystal"] == true)
   check("mk1 hidden at start", not force.technologies["sap-satellite-mk1"].enabled)
   check("echaris discovery hidden", not force.technologies["sap-planet-discovery-echaris"].enabled
     and not force.technologies["sap-planet-discovery-echaris"].visible_when_disabled)
@@ -300,6 +306,57 @@ steps[1500] = function()
         shielded and shielded.valid and shielded.health)
   check("aquara: anchor caught tornado", anchor and anchor.valid and anchor.energy > 0,
         anchor and anchor.valid and anchor.energy)
+end
+
+-- Тики 140+: Nivar --------------------------------------------------------------------
+steps[140] = function()
+  local surface = game.planets["nivar"].create_surface()
+  surface.request_to_generate_chunks({ 0, 0 }, 6)
+  surface.force_generate_chunk_requests()
+  check("nivar: map generated", surface.is_chunk_generated({ 2, 2 }))
+  check("nivar: no surface resources", surface.count_entities_filtered({ type = "resource" }) == 0,
+        surface.count_entities_filtered({ type = "resource" }))
+
+  local pos = surface.find_non_colliding_position("sap-nivar-elevator", { 0, 0 }, 64, 1)
+  local elevator = surface.create_entity({ name = "sap-nivar-elevator", position = pos, force = "player", raise_built = true })
+  local partner = remote.call("sap-nivar", "partner_of", elevator)
+  check("nivar: elevator partner in caves", partner and partner.valid and partner.surface.name == "nivar-caves",
+        partner and partner.valid and partner.surface.name)
+  if partner and partner.valid then
+    elevator.get_inventory(defines.inventory.linked_container_main).insert({ name = "iron-plate", count = 7 })
+    check("nivar: elevator storage shared",
+          partner.get_inventory(defines.inventory.linked_container_main).get_item_count("iron-plate") == 7)
+  end
+  local caves = game.surfaces["nivar-caves"]
+  check("nivar: caves are dark", caves.freeze_daytime and caves.daytime == 0.5, caves.daytime)
+  caves.request_to_generate_chunks({ 0, 0 }, 6)
+  caves.force_generate_chunk_requests()
+  local ores = {}
+  for _, ore in pairs({ "sap-nivalite", "sap-cryolite", "sap-dark-ice" }) do
+    ores[ore] = caves.count_entities_filtered({ name = ore })
+    check("nivar: caves have " .. ore, ores[ore] > 0, ores[ore])
+  end
+
+  -- Криобуря: машина без защиты и машина у криообогревателя.
+  local cold_pos = surface.find_non_colliding_position("assembling-machine-2", { 40, 0 }, 40, 6)
+  storage.nv_cold = surface.create_entity({ name = "assembling-machine-2", position = cold_pos, force = "player" })
+  local warm_pos = surface.find_non_colliding_position("assembling-machine-2", { -40, 0 }, 40, 6)
+  storage.nv_warm = surface.create_entity({ name = "assembling-machine-2", position = warm_pos, force = "player" })
+  surface.create_entity({ name = "sap-cryo-heater", position = { warm_pos.x + 2.5, warm_pos.y }, force = "player" })
+  surface.create_entity({ name = "electric-energy-interface", position = { warm_pos.x, warm_pos.y + 4 }, force = "player" })
+  surface.create_entity({ name = "substation", position = { warm_pos.x + 3, warm_pos.y + 3 }, force = "player" })
+  remote.call("sap-nivar", "set_cryostorm", true)
+end
+
+steps[4500] = function()
+  local cold, warm = storage.nv_cold, storage.nv_warm
+  check("nivar: cryostorm stops unprotected machine", cold and cold.valid and cold.disabled_by_script,
+        cold and cold.valid and tostring(cold.disabled_by_script))
+  check("nivar: cryo heater protects machine", warm and warm.valid and not warm.disabled_by_script,
+        warm and warm.valid and tostring(warm.disabled_by_script))
+  local nests = game.surfaces["nivar"].count_entities_filtered({ name = "sap-blizzard-nest" })
+    + game.surfaces["nivar-caves"].count_entities_filtered({ name = "sap-cave-nest" })
+  check("nivar: nests placed", nests > 0, nests)
 end
 
 -- Конец ---------------------------------------------------------------------------

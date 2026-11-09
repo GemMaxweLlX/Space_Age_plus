@@ -1,8 +1,10 @@
 -- space-age-plus-nivar: прототипы (Nivar — спутник Аквило).
--- Модуль пока заготовка. Здесь будут: planet, space-connection, autoplace ресурсов,
--- существа и гнёзда, постройки и технологии планеты.
-
--- Регистрация планеты в системе кислорода ядра (space-age-plus-core).
--- "collector" — как планета решает проблему воздуха (см. docs: Кислород → По планетам).
 local sap = require("__space-age-plus-core__.prototypes.api")
+
+-- Кислород: на поверхности коллектор + криоконцентратор, в пещерах только генератор.
 sap.register_oxygen_planet("nivar", { solution = "collector" })
+sap.register_oxygen_planet("nivar-caves", { solution = "generator" })
+
+require("prototypes.planet")
+require("prototypes.content")
+require("prototypes.creatures")

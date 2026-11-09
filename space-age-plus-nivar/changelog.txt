@@ -2,4 +2,8 @@
 Version: 0.1.0
 Date: 2026-11-09
   Major Features:
-    - Initial module skeleton.
+    - Nivar, moon of Aquilo: ice desert without surface resources, buildings need heating.
+    - Dark caves layer with nivalite, cryolite and dark ice; elevator with shared storage and travel button.
+    - Deep drill brings cave resources up from the surface; cryo lamps.
+    - Cryostorms freeze machines in stages; cryo heater and cryo shield dome protect them.
+    - Blizzard nests and Ice guardians on the surface, cave nests and Bottomless in the caves.
