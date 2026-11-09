@@ -2,4 +2,8 @@
 Version: 0.1.0
 Date: 2026-11-09
   Major Features:
-    - Initial module skeleton.
+    - Aquara, moon of Gleba: Gleba biosphere flooded into islands (about two thirds water).
+    - Green, deep and bioluminescent algae from the water tower; sea salt preservation.
+    - Storms with tornadoes; storm shield and storm anchor.
+    - Ripple and Surf nests, solitary Abyss; aggressive creatures and permanent storm hardcore settings.
+    - Oxygen collector with dehumidifier.

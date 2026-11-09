@@ -11,7 +11,7 @@ Immerse yourself in new space adventures with the "Space age+" mod for Factorio!
 | `space-age-plus-debris` | Космический мусор на маршрутах | v0.1: мусор из выброшенного, ракетные обломки, падения |
 | `space-age-plus-solaris` | Solaris — планета у Солнца | v0.1: планета, ресурсы, коронарная масса, перегрев, лавовые существа |
 | `space-age-plus-echaris` | Echaris — спутник Фульгоры | v0.2: планета, буря, стабилизатор, Механиты, центры захвата, 5 технологий |
-| `space-age-plus-aquara` | Aquara — спутник Глебы | Заготовка |
+| `space-age-plus-aquara` | Aquara — спутник Глебы | v0.1: водный мир, водоросли, морская соль, бури с торнадо, щит и якорь, пентаподы |
 | `space-age-plus-nivar` | Nivar — спутник Аквило | Заготовка |
 
 > Модули проверены в Factorio 2.1.24 (headless-сервер с Space Age): мод загружается, автотесты

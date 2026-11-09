@@ -130,9 +130,9 @@ end
 local function discovery_states()
   local force = game.forces.player
   local found, scouted = 0, 0
-  local names = { "sap-planet-discovery-echaris" }
-  if settings.startup["sap-exploration-vanilla-planets"].value then
-    for _, p in pairs({ "vulcanus", "fulgora", "gleba", "aquilo" }) do names[#names + 1] = "planet-discovery-" .. p end
+  local names = {}
+  for _, info in pairs(prototypes.mod_data["sap-explorable-planets"].data) do
+    names[#names + 1] = info.discovery_tech
   end
   for _, name in pairs(names) do
     local t = force.technologies[name]
@@ -254,6 +254,52 @@ steps[5000] = function()
         hot and hot.valid and tostring(hot.disabled_by_script))
   check("solaris: radiator protects machine", cool and cool.valid and not cool.disabled_by_script,
         cool and cool.valid and tostring(cool.disabled_by_script))
+end
+
+-- Тики 120+: Aquara ------------------------------------------------------------------
+steps[120] = function()
+  local surface = game.planets["aquara"].create_surface()
+  surface.request_to_generate_chunks({ 0, 0 }, 8)
+  surface.force_generate_chunk_requests()
+  check("aquara: map generated", surface.is_chunk_generated({ 2, 2 }))
+  local area = { { -256, -256 }, { 256, 256 } }
+  local water = surface.count_tiles_filtered({ area = area, collision_mask = "water_tile" })
+  local total = 512 * 512
+  log("SAP-TEST INFO aquara water fraction " .. string.format("%.2f", water / total))
+  check("aquara: mostly water", water / total > 0.6, water / total)
+  check("aquara: no gleba spawners", surface.count_entities_filtered({ name = { "gleba-spawner", "gleba-spawner-small" } }) == 0)
+
+  -- Торнадо: незащищённая постройка, постройка под щитом, якорь.
+  local function land(near)
+    return surface.find_non_colliding_position("storage-tank", near, 200, 4, true)
+  end
+  local p1 = land({ 0, 0 })
+  storage.aq_bare = surface.create_entity({ name = "storage-tank", position = p1, force = "player" })
+  remote.call("sap-aquara", "spawn_tornado", { x = p1.x - 6, y = p1.y }, p1, 3)
+
+  local p2 = land({ 120, 0 })
+  storage.aq_shielded = surface.create_entity({ name = "storage-tank", position = p2, force = "player" })
+  surface.create_entity({ name = "sap-storm-shield", position = { p2.x + 4, p2.y + 4 }, force = "player" })
+  surface.create_entity({ name = "electric-energy-interface", position = { p2.x - 4, p2.y + 4 }, force = "player" })
+  surface.create_entity({ name = "substation", position = { p2.x, p2.y + 5 }, force = "player" })
+  remote.call("sap-aquara", "spawn_tornado", { x = p2.x - 6, y = p2.y }, p2, 3)
+
+  local p3 = land({ -120, 0 })
+  storage.aq_anchor = surface.create_entity({ name = "sap-storm-anchor", position = p3, force = "player" })
+  remote.call("sap-aquara", "spawn_tornado", { x = p3.x - 20, y = p3.y }, { x = p3.x - 60, y = p3.y }, 2)
+end
+
+steps[1500] = function()
+  local surface = game.surfaces["aquara"]
+  local nests = surface.count_entities_filtered({ name = "sap-aquara-nest" })
+  check("aquara: nests placed", nests > 0, nests)
+  local bare, shielded, anchor = storage.aq_bare, storage.aq_shielded, storage.aq_anchor
+  check("aquara: tornado damages unshielded", not (bare and bare.valid) or bare.health < bare.max_health,
+        bare and bare.valid and bare.health)
+  check("aquara: shield protects", shielded and shielded.valid and shielded.health == shielded.max_health,
+        shielded and shielded.valid and shielded.health)
+  check("aquara: anchor caught tornado", anchor and anchor.valid and anchor.energy > 0,
+        anchor and anchor.valid and anchor.energy)
 end
 
 -- Конец ---------------------------------------------------------------------------
