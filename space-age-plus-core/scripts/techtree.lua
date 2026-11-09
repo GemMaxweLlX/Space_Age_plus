@@ -127,12 +127,23 @@ local function count_all(inventory, name)
   return total
 end
 
+-- Колбы — всё, что принимают лаборатории. (В 2.1 колбы — обычные предметы, не "tool".)
+local science_packs
+local function is_science_pack(name)
+  if not science_packs then
+    science_packs = {}
+    for _, lab in pairs(prototypes.get_entity_filtered({ { filter = "type", type = "lab" } })) do
+      for _, input in pairs(lab.lab_inputs or {}) do science_packs[input] = true end
+    end
+  end
+  return science_packs[name] == true
+end
+
 --- Виды колб в инвентаре, которых хватает на одно использование (любого качества).
 local function available_packs(inventory)
   local packs = {}
   for _, stack in pairs(inventory.get_contents()) do
-    local proto = prototypes.item[stack.name]
-    if proto and proto.type == "tool" and count_all(inventory, stack.name) >= PACKS_PER_USE then
+    if is_science_pack(stack.name) and count_all(inventory, stack.name) >= PACKS_PER_USE then
       packs[stack.name] = true
     end
   end
@@ -256,92 +267,91 @@ end
 
 -- Действия ----------------------------------------------------------------------
 
-local function run_decipherer(player, entity)
+-- Логика без окна: возвращает { message = LocalisedString } и/или { pending = выбор }.
+-- Окна (run_decipherer, run_logic_lab) только показывают результат игроку.
+
+local function decipher_step(force, entity)
   local inventory = inventory_of(entity)
   -- Зашифрованные инопланетные данные расшифровываются первыми, по одной за нажатие.
   if count_all(inventory, "sap-alien-data") > 0 then
     inventory.remove({ name = "sap-alien-data", count = 1 })
     inventory.insert({ name = "sap-alien-data-decrypted", count = 1 })
-    diary.add(player.force, "first-decryption")
-    diary.add(player.force, "alien-data-after")
-    player.print({ "sap-techtree.alien-decrypted" })
-    return
+    diary.add(force, "first-decryption")
+    diary.add(force, "alien-data-after")
+    return { message = { "sap-techtree.alien-decrypted" } }
   end
   local card = find_card(inventory)
-  if not card then
-    player.print({ "sap-techtree.no-card" })
-    return
-  end
+  if not card then return { message = { "sap-techtree.no-card" } } end
   local packs = available_packs(inventory)
-  if next(packs) == nil then
-    player.print({ "sap-techtree.no-packs", PACKS_PER_USE })
-    return
-  end
-  local options = roll_options(player.force, card, packs)
-  if #options == 0 then
-    player.print({ "sap-techtree.nothing-to-decipher" })
-    return
-  end
+  if next(packs) == nil then return { message = { "sap-techtree.no-packs", PACKS_PER_USE } } end
+  local options = roll_options(force, card, packs)
+  if #options == 0 then return { message = { "sap-techtree.nothing-to-decipher" } } end
   consume_packs(inventory, packs)
-  local pending = { entity = entity, card = card, packs = packs, options = options, can_refresh = true }
-  state().pending[player.index] = pending
-  show_choice(player, pending)
+  return { pending = { entity = entity, card = card, packs = packs, options = options, can_refresh = true } }
+end
+
+local function logic_lab_step(force, entity, roll)
+  if settings.startup["sap-hardcore-decipher-only"].value then return { message = { "sap-techtree.llk-disabled" } } end
+  local inventory = inventory_of(entity)
+  local packs = available_packs(inventory)
+  if next(packs) == nil then return { message = { "sap-techtree.no-packs", PACKS_PER_USE } } end
+  consume_packs(inventory, packs)
+  local chance = settings.global["sap-llk-chance"].value / 100
+  if (roll or math.random()) >= chance then return { message = { "sap-techtree.llk-failed" } } end
+  local list = categories()
+  local category = list[math.random(1, #list)]
+  local names = pick(candidates(force, category, packs), OPTIONS_LLK)
+  if #names == 0 then names = pick(candidates(force, nil, packs), OPTIONS_LLK) end
+  if #names == 0 then return { message = { "sap-techtree.nothing-to-decipher" } } end
+  local options = {}
+  for i, name in ipairs(names) do options[i] = { tech = name, quality = "normal" } end
+  return { pending = { entity = entity, options = options, can_refresh = false } }
+end
+
+local function show_result(player, result)
+  if result.message then player.print(result.message) end
+  if result.pending then
+    state().pending[player.index] = result.pending
+    show_choice(player, result.pending)
+  end
+end
+
+local function run_decipherer(player, entity)
+  show_result(player, decipher_step(player.force, entity))
 end
 
 local function run_logic_lab(player, entity)
-  if settings.startup["sap-hardcore-decipher-only"].value then
-    player.print({ "sap-techtree.llk-disabled" })
-    return
+  show_result(player, logic_lab_step(player.force, entity))
+end
+
+--- Применяет выбор варианта: открывает технологию, решает судьбу карты.
+--- Возвращает список сообщений.
+local function apply_choice(force, pending, index)
+  local option = pending.options[index]
+  if not option then return {} end
+  local messages = {}
+  local was_unlocked = unlocked_for(force)[option.tech] ~= nil
+  unlock(force, option.tech, option.quality)
+  local info = catalog()[option.tech]
+  diary.on_tech_unlocked(force, option.tech, option.quality, info and info.category, was_unlocked)
+  force.print({ "sap-techtree.unlocked", prototypes.technology[option.tech].localised_name,
+                { "quality-name." .. option.quality } })
+  if pending.card and pending.entity and pending.entity.valid then
+    local survive = QUALITY[pending.card.quality] and QUALITY[pending.card.quality].survive or 0
+    if math.random() >= survive then
+      remove_card(inventory_of(pending.entity), pending.card)
+      messages[#messages + 1] = { "sap-techtree.card-used" }
+    else
+      messages[#messages + 1] = { "sap-techtree.card-survived" }
+    end
   end
-  local inventory = inventory_of(entity)
-  local packs = available_packs(inventory)
-  if next(packs) == nil then
-    player.print({ "sap-techtree.no-packs", PACKS_PER_USE })
-    return
-  end
-  consume_packs(inventory, packs)
-  local chance = settings.global["sap-llk-chance"].value / 100
-  if math.random() >= chance then
-    player.print({ "sap-techtree.llk-failed" })
-    return
-  end
-  local list = categories()
-  local category = list[math.random(1, #list)]
-  local names = pick(candidates(player.force, category, packs), OPTIONS_LLK)
-  if #names == 0 then
-    names = pick(candidates(player.force, nil, packs), OPTIONS_LLK)
-  end
-  if #names == 0 then
-    player.print({ "sap-techtree.nothing-to-decipher" })
-    return
-  end
-  local options = {}
-  for i, name in ipairs(names) do options[i] = { tech = name, quality = "normal" } end
-  local pending = { entity = entity, options = options, can_refresh = false }
-  state().pending[player.index] = pending
-  show_choice(player, pending)
+  return messages
 end
 
 local function choose(player, index)
   local pending = state().pending[player.index]
   if not pending then return end
-  local option = pending.options[index]
-  if not option then return end
-  local was_unlocked = unlocked_for(player.force)[option.tech] ~= nil
-  unlock(player.force, option.tech, option.quality)
-  local info = catalog()[option.tech]
-  diary.on_tech_unlocked(player.force, option.tech, option.quality, info and info.category, was_unlocked)
-  player.force.print({ "sap-techtree.unlocked", prototypes.technology[option.tech].localised_name,
-                       { "quality-name." .. option.quality } })
-  if pending.card and pending.entity and pending.entity.valid then
-    local survive = QUALITY[pending.card.quality] and QUALITY[pending.card.quality].survive or 0
-    if math.random() >= survive then
-      remove_card(inventory_of(pending.entity), pending.card)
-      player.print({ "sap-techtree.card-used" })
-    else
-      player.print({ "sap-techtree.card-survived" })
-    end
-  end
+  for _, message in pairs(apply_choice(player.force, pending, index)) do player.print(message) end
   close_choice(player)
 end
 
@@ -517,6 +527,17 @@ function techtree.on_configuration_changed()
   state()
   if not enabled() then return end
   sync_all()
+end
+
+--- Для тестов: дешифратор/ЛЛК без окна. Возвращает имена предложенных технологий
+--- (или nil и ключ сообщения) и сразу выбирает вариант choice, если он задан.
+function techtree.test_run(force, entity, choice, llk_roll)
+  local result = entity.name == LOGIC_LAB and logic_lab_step(force, entity, llk_roll) or decipher_step(force, entity)
+  if not result.pending then return nil, result.message and result.message[1] end
+  local names = {}
+  for i, option in ipairs(result.pending.options) do names[i] = option.tech .. ":" .. option.quality end
+  if choice then apply_choice(force, result.pending, choice) end
+  return names
 end
 
 --- Для тестов и скриптов других модулей: открыть технологию как через дешифратор.

@@ -97,6 +97,11 @@ remote.add_interface("sap-diary", {
 
 -- Для автотестов.
 remote.add_interface("sap-core", {
+  decipher = function(force_name, entity, choice, llk_roll)
+    local names, message = techtree.test_run(game.forces[force_name], entity, choice, llk_roll)
+    return { names = names, message = message }
+  end,
+  oxygen_step = function(character, initial_air) return oxygen.test_step(character, initial_air) end,
   no_delivery_override = function(surface_name, value) no_delivery.set_override(surface_name, value) end,
   check_pod = function(pod) return no_delivery.check_pod(pod, nil) end,
   unlock_tech = function(force_name, tech, quality) techtree.unlock(game.forces[force_name], tech, quality) end,

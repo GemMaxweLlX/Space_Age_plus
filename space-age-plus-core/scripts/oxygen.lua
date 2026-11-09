@@ -124,14 +124,12 @@ end
 
 -- Тик -------------------------------------------------------------------------
 
-local function process_player(player)
-  local character = player.character
-  if not (character and character.valid) then
-    destroy_gui(player)
-    return
+--- Один шаг кислородной системы для персонажа. player может быть nil (тесты): тогда нет
+--- сообщений и индикатора. Возвращает false, если кислород здесь не нужен.
+local function process_character(character, state, player)
+  local function say(message, color)
+    if player then player.print(message, { color = color }) end
   end
-
-  local state = get_state(player.index)
   local capacity, emergency = capacity_of(character)
 
   if not needs_oxygen(character.surface) then
@@ -139,8 +137,7 @@ local function process_player(player)
     state.air = capacity
     state.empty_notified = false
     state.emergency_notified = false
-    destroy_gui(player)
-    return
+    return false
   end
 
   local seconds = oxygen.TICK_INTERVAL / 60
@@ -148,8 +145,8 @@ local function process_player(player)
 
   if state.grace_until and game.tick < state.grace_until then
     state.air = math.min(capacity, state.air + (inside and REFILL_PER_SECOND * seconds or 0))
-    update_gui(player, state, capacity, inside, math.ceil((state.grace_until - game.tick) / 60))
-    return
+    if player then update_gui(player, state, capacity, inside, math.ceil((state.grace_until - game.tick) / 60)) end
+    return true
   end
   state.grace_until = nil
 
@@ -163,25 +160,46 @@ local function process_player(player)
     state.emergency_notified = false
   elseif emergency > 0 and state.air > 0 and not state.emergency_notified then
     state.emergency_notified = true
-    player.print({ "sap-oxygen.emergency-active", math.floor(state.air) },
-      { color = { r = 1, g = 0.8, b = 0.2 } })
+    say({ "sap-oxygen.emergency-active", math.floor(state.air) }, { r = 1, g = 0.8, b = 0.2 })
   end
 
   if state.air <= 0 and not inside then
     if not state.empty_notified then
       state.empty_notified = true
-      player.print({ "sap-oxygen.life-support-failure" }, { color = { r = 1, g = 0.3, b = 0.3 } })
+      say({ "sap-oxygen.life-support-failure" }, { r = 1, g = 0.3, b = 0.3 })
     end
     character.damage(damage_per_second(character) * seconds, "neutral", "sap-suffocation")
   else
     state.empty_notified = false
   end
 
-  if character.valid then
-    update_gui(player, state, capacity, inside)
-  else
+  if player then
+    if character.valid then update_gui(player, state, capacity, inside) else destroy_gui(player) end
+  end
+  return true
+end
+
+local function process_player(player)
+  local character = player.character
+  if not (character and character.valid) then
+    destroy_gui(player)
+    return
+  end
+  if not process_character(character, get_state(player.index), player) then
     destroy_gui(player)
   end
+end
+
+--- Для тестов: персонажи без игроков с собственным состоянием баллона.
+function oxygen.test_step(character, initial_air)
+  storage.oxygen_test = storage.oxygen_test or {}
+  local state = storage.oxygen_test[character.unit_number]
+  if not state then
+    state = { air = initial_air or 0, empty_notified = false, emergency_notified = false }
+    storage.oxygen_test[character.unit_number] = state
+  end
+  process_character(character, state, nil)
+  return state.air
 end
 
 function oxygen.on_tick()

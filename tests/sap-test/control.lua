@@ -512,15 +512,34 @@ steps[210] = function()
   storage.sb_boiler, storage.sb_start = boiler, boiler.temperature
   remote.call("sap-solaris", "charge_catcher", catcher, 5000000000)
 
-  local tpos = surface.find_non_colliding_position("sap-mega-turbine", { 80, 120 }, 80, 6)
-  local turbine = surface.create_entity({ name = "sap-mega-turbine", position = tpos, force = "player" })
-  local load = surface.create_entity({ name = "electric-energy-interface", position = { tpos.x + 6, tpos.y }, force = "player" })
-  load.power_production = 0
-  load.power_usage = 50000000 / 60
-  load.electric_buffer_size = 100000000
-  surface.create_entity({ name = "substation", position = { tpos.x + 4, tpos.y + 4 }, force = "player" })
-  local tank = surface.create_entity({ name = "storage-tank",
-    position = surface.find_non_colliding_position("storage-tank", { tpos.x - 4, tpos.y }, 6, 1), force = "player" })
+  -- Установка целиком: турбина, нагрузка, подстанция, бак. Вокруг лава, поэтому ищем участок
+  -- суши и проверяем, что встала каждая постройка; иначе пробуем другое место.
+  local turbine, tank
+  for attempt = 1, 8 do
+    local center = surface.find_non_colliding_position("rocket-silo", { 80 + attempt * 40, 120 }, 120, 2, true)
+    if center then
+      local placed = {}
+      local function put(name, dx, dy)
+        local e = surface.create_entity({ name = name, position = { center.x + dx, center.y + dy }, force = "player" })
+        if e then placed[#placed + 1] = e end
+        return e
+      end
+      turbine = put("sap-mega-turbine", 0, 0)
+      local load = put("electric-energy-interface", 3, -1)
+      local pole = put("substation", 3, 2)
+      tank = put("storage-tank", -3, 0)
+      if turbine and load and pole and tank then
+        load.power_production = 0
+        load.power_usage = 50000000 / 60
+        load.electric_buffer_size = 100000000
+        log("SAP-TEST INFO mega turbine setup on attempt " .. attempt)
+        break
+      end
+      for _, e in pairs(placed) do e.destroy() end
+      turbine, tank = nil, nil
+    end
+  end
+  check("solaris: mega turbine test setup", turbine ~= nil and tank ~= nil)
   storage.mt_turbine, storage.mt_tank = turbine, tank
 end
 
@@ -759,6 +778,87 @@ steps[7500] = function()
   local player_entries = {}
   for _, key in pairs(remote.call("sap-diary", "entries", "player")) do player_entries[key] = true end
   check("diary: first interplanetary delivery", player_entries["first-delivery"] == true)
+end
+
+-- Тики 8000+: кислород (без игрока, через тестовый шаг) ---------------------------------
+steps[8000] = function()
+  local surface = game.planets["vulcanus"].create_surface()
+  surface.request_to_generate_chunks({ 0, 0 }, 3)
+  surface.force_generate_chunk_requests()
+  local function spot(near) return surface.find_non_colliding_position("rocket-silo", near, 80, 2, true) end
+  local force = game.forces.player
+
+  local a = surface.create_entity({ name = "character", position = spot({ -40, 0 }), force = force })
+  local bpos = spot({ 0, 40 })
+  local b = surface.create_entity({ name = "character", position = bpos, force = force })
+  local armor = b.get_inventory(defines.inventory.character_armor)
+  armor.insert({ name = "modular-armor", count = 1 })
+  armor[1].grid.put({ name = "sap-oxygen-tank-equipment" })
+
+  local cpos = spot({ 40, 0 })
+  local distributor = surface.create_entity({ name = "sap-oxygen-distributor", position = cpos, force = force })
+  surface.create_entity({ name = "electric-energy-interface", position = { cpos.x + 3, cpos.y - 2 }, force = force })
+  surface.create_entity({ name = "substation", position = { cpos.x + 3, cpos.y + 1 }, force = force })
+  local c = surface.create_entity({ name = "character", position = { cpos.x - 3, cpos.y + 3 }, force = force })
+  storage.ox = { a = a, b = b, c = c, distributor = distributor }
+  storage.ox.b_start = remote.call("sap-core", "oxygen_step", b, 150)
+end
+
+for tick = 8060, 8660, 60 do
+  steps[tick] = function()
+    local ox = storage.ox
+    if ox.distributor.valid then ox.distributor.insert_fluid({ name = "sap-oxygen", amount = 50 }) end
+    for _, key in pairs({ "a", "b", "c" }) do
+      if ox[key].valid then ox["air_" .. key] = remote.call("sap-core", "oxygen_step", ox[key]) end
+    end
+  end
+end
+
+steps[8700] = function()
+  local ox = storage.ox
+  check("oxygen: no armor means suffocation", not ox.a.valid or ox.a.health < ox.a.max_health,
+        ox.a.valid and ox.a.health)
+  check("oxygen: tank keeps you alive", ox.b.valid and ox.b.health == ox.b.max_health, ox.b.valid and ox.b.health)
+  check("oxygen: tank air goes down", ox.air_b and ox.air_b < ox.b_start, tostring(ox.b_start) .. " -> " .. tostring(ox.air_b))
+  check("oxygen: distributor zone protects", ox.c.valid and ox.c.health == ox.c.max_health,
+        ox.c.valid and ox.c.health .. " status " .. tostring(ox.distributor.status))
+end
+
+-- Тики 8800+: дешифратор и ЛЛК (без окна, через тестовый вызов) --------------------------
+steps[8800] = function()
+  if not techtree_on() then return end
+  local surface = game.surfaces.nauvis
+  local force = game.forces.player
+  local function machine(name, near)
+    local e = surface.create_entity({ name = name, position = surface.find_non_colliding_position(name, near, 40, 1),
+                                      force = force })
+    local inv = e.get_inventory(defines.inventory.chest)
+    inv.insert({ name = "automation-science-pack", count = 10 })
+    inv.insert({ name = "logistic-science-pack", count = 10 })
+    return e, inv
+  end
+  local dec, dinv = machine("sap-decipherer", { -60, -60 })
+  dinv.insert({ name = "sap-data-card-logistics", count = 1, quality = "rare" })
+  local result = remote.call("sap-core", "decipher", "player", dec, 1)
+  log("SAP-TEST INFO decipher options " .. serpent.line(result))
+  check("decipher: offers technologies", result.names and #result.names > 0, serpent.line(result))
+  if result.names and result.names[1] then
+    local tech = string.match(result.names[1], "^(.-):")
+    check("decipher: chosen technology unlocked", force.technologies[tech].enabled, tech)
+  end
+  check("decipher: packs spent", dinv.get_item_count("automation-science-pack") == 0)
+
+  local llk, linv = machine("sap-logic-lab", { -70, -60 })
+  local llk_result = remote.call("sap-core", "decipher", "player", llk, 1, 0)
+  log("SAP-TEST INFO llk options " .. serpent.line(llk_result))
+  check("llk: success offers up to two", llk_result.names and #llk_result.names >= 1 and #llk_result.names <= 2,
+        serpent.line(llk_result))
+  local fail = machine("sap-logic-lab", { -80, -60 })
+  local fail_result = remote.call("sap-core", "decipher", "player", fail, nil, 0.99)
+  check("llk: failure spends packs and gives nothing", fail_result.names == nil and fail_result.message == "sap-techtree.llk-failed",
+        serpent.line(fail_result))
+  check("llk: no alien technologies offered", not (llk_result.names and string.find(table.concat(llk_result.names, ","), "sap%-alien")))
+  local _ = linv
 end
 
 -- Конец ---------------------------------------------------------------------------
