@@ -56,3 +56,31 @@ data:extend({
   item("sap-guardian-core", "__base__/graphics/icons/uranium-235.png", "d"),
   item("sap-bottomless-core", "__base__/graphics/icons/uranium-238.png", "e"),
 })
+
+-- Захват ульев SA+: гнёзда Вьюги (поверхность) и пещерные гнёзда захватываются;
+-- Ледяной страж и Бездонный — одиночки, только убить.
+local sap = require("__space-age-plus-core__.prototypes.api")
+local NIVAR_SCIENCE = {
+  { "automation-science-pack", 1 }, { "logistic-science-pack", 1 }, { "chemical-science-pack", 1 },
+  { "space-science-pack", 1 }, { "cryogenic-science-pack", 1 }, { "agricultural-science-pack", 1 },
+}
+sap.capturable_nests({
+  planet = "nivar", tint = TINT, discovery_tech = "sap-planet-discovery-nivar",
+  nests = { { nest = "sap-blizzard-nest", product = "sap-cryo-carapace" } },
+  food_ingredients = {
+    { type = "item", name = "sap-cryolite", amount = 1 },
+    { type = "item", name = "iron-ore", amount = 2 },
+  },
+  rocket_ingredients = { { type = "item", name = "sap-cryolite", amount = 4 } },
+  science = NIVAR_SCIENCE,
+})
+sap.capturable_nests({
+  planet = "nivar-caves", tint = { r = 0.4, g = 0.5, b = 0.8, a = 1 }, discovery_tech = "sap-planet-discovery-nivar",
+  nests = { { nest = "sap-cave-nest", product = "sap-cryo-gland" } },
+  food_ingredients = {
+    { type = "item", name = "sap-cryolite", amount = 1 },
+    { type = "item", name = "sap-dark-ice", amount = 2 },
+  },
+  rocket_ingredients = { { type = "item", name = "sap-dark-ice", amount = 4 } },
+  science = NIVAR_SCIENCE,
+})

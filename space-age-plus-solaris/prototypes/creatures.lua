@@ -56,3 +56,22 @@ data:extend({
   item("sap-lava-clot", "__base__/graphics/icons/coal.png", "b"),
   item("sap-molten-core", "__base__/graphics/icons/uranium-235.png", "c"),
 })
+
+-- Захват ульев SA+: Скорч и Магмар захватываются (Молтен — одиночка, только убить).
+local sap = require("__space-age-plus-core__.prototypes.api")
+sap.capturable_nests({
+  planet = "solaris", tint = TINT, discovery_tech = "sap-planet-discovery-solaris",
+  nests = {
+    { nest = "sap-scorch-nest", product = "sap-heat-scales" },
+    { nest = "sap-magmar-nest", product = "sap-lava-clot" },
+  },
+  food_ingredients = {
+    { type = "item", name = "sap-thermite", amount = 1 },
+    { type = "item", name = "sap-magmatic-ore", amount = 2 },
+  },
+  rocket_ingredients = { { type = "item", name = "sap-heat-resistant-alloy", amount = 2 } },
+  science = {
+    { "automation-science-pack", 1 }, { "logistic-science-pack", 1 }, { "chemical-science-pack", 1 },
+    { "space-science-pack", 1 }, { "metallurgic-science-pack", 1 }, { "agricultural-science-pack", 1 },
+  },
+})

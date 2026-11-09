@@ -4,6 +4,7 @@ local diary = require("scripts.diary")
 local exploration = require("scripts.exploration")
 local techtree = require("scripts.techtree")
 local quality_bonus = require("scripts.quality_bonus")
+local capture = require("scripts.capture")
 
 script.on_init(function()
   oxygen.on_init()
@@ -70,3 +71,6 @@ remote.add_interface("sap-core", {
   unlock_tech = function(force_name, tech, quality) techtree.unlock(game.forces[force_name], tech, quality) end,
   researched_quality = function(force_name, tech) return quality_bonus.researched_quality(game.forces[force_name], tech) end,
 })
+
+-- Захват ульев SA+
+script.on_event(defines.events.on_script_trigger_effect, capture.on_script_trigger_effect)

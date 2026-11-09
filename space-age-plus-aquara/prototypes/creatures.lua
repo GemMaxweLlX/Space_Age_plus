@@ -48,3 +48,19 @@ data:extend({
   item("sap-carapace", "__base__/graphics/icons/stone.png", "b"),
   item("sap-abyss-core", "__base__/graphics/icons/uranium-235.png", "c"),
 })
+
+-- Захват ульев SA+: гнёзда Ряби и Прибоя захватываются (Бездна — одиночка, только убить).
+local sap = require("__space-age-plus-core__.prototypes.api")
+sap.capturable_nests({
+  planet = "aquara", tint = TINT, discovery_tech = "sap-planet-discovery-aquara",
+  nests = { { nest = "sap-aquara-nest", product = "sap-venom-gland" } },
+  food_ingredients = {
+    { type = "item", name = "sap-sea-salt", amount = 1 },
+    { type = "item", name = "sap-green-algae", amount = 2 },
+  },
+  rocket_ingredients = { { type = "item", name = "sap-sea-salt", amount = 5 } },
+  science = {
+    { "automation-science-pack", 1 }, { "logistic-science-pack", 1 }, { "chemical-science-pack", 1 },
+    { "space-science-pack", 1 }, { "agricultural-science-pack", 1 },
+  },
+})

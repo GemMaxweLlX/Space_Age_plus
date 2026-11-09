@@ -30,5 +30,6 @@ end
 -- Для автотестов.
 remote.add_interface("sap-nivar", {
   set_cryostorm = function(active) cryostorm.set_active(active) end,
+  is_cryostorm = function() return storage.cryostorm ~= nil and storage.cryostorm.active == true end,
   partner_of = function(entity) return caves.partner_of(entity) end,
 })

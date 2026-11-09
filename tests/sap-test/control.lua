@@ -408,6 +408,41 @@ steps[180] = function()
   check("I3: bonus does not leak to neighbour", (neighbour.speed or 0) == 0, serpent.line(neighbour))
 end
 
+-- Тики 190+: захват ульев SA+ ----------------------------------------------------------
+steps[190] = function()
+  local surface = game.surfaces["solaris"]
+  local pos = surface.find_non_colliding_position("sap-scorch-nest", { 0, -60 }, 60, 2)
+  local nest = surface.create_entity({ name = "sap-scorch-nest", position = pos, force = "enemy" })
+  storage.capture_pos = nest.position
+  surface.create_entity({ name = "sap-capture-rocket-solaris", position = { pos.x, pos.y + 10 }, target = nest.position,
+                          speed = 0.3, force = "player" })
+  -- Ванильная ракета захвата не должна брать гнёзда SA+.
+  local pos2 = surface.find_non_colliding_position("sap-scorch-nest", { 60, -60 }, 60, 2)
+  local nest2 = surface.create_entity({ name = "sap-scorch-nest", position = pos2, force = "enemy" })
+  storage.vanilla_target = nest2
+  surface.create_entity({ name = "capture-robot-rocket", position = { pos2.x, pos2.y + 10 }, target = nest2,
+                          speed = 0.3, force = "player" })
+end
+
+steps[400 + 1] = function()
+  local surface = game.surfaces["solaris"]
+  local captive = surface.find_entities_filtered({ name = "sap-captive-sap-scorch-nest", position = storage.capture_pos,
+                                                   radius = 3 })[1]
+  check("capture: recalibrated rocket captures nest", captive ~= nil)
+  check("capture: vanilla rocket ignores SA+ nest", storage.vanilla_target and storage.vanilla_target.valid)
+  if captive then
+    captive.get_fuel_inventory().insert({ name = "sap-solaris-food", count = 10 })
+    storage.captive = captive
+  end
+end
+
+steps[2500] = function()
+  local captive = storage.captive
+  if not (captive and captive.valid) then return end
+  local produced = captive.get_output_inventory().get_item_count("sap-heat-scales")
+  check("capture: fed captive nest produces scales", produced > 0, produced)
+end
+
 -- Конец ---------------------------------------------------------------------------
 -- Мусор проверяем раньше: куски медленно пролетают мимо и улетают с карты.
 steps[2900] = function()
