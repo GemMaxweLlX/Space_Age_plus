@@ -4,7 +4,7 @@ Date: 2026-11-09
   Major Features:
     - Oxygen system: collector, generator, distributor, armor tanks, emergency system.
     - Planet exploration: telescope, generation 1 and 2 satellites.
-    - Hidden technology tree: data cards, decipherer, logic lab complex, data wrecks (startup setting, off by default).
+    - Hidden technology tree (on by default): data cards, decipherer, logic lab complex, data wrecks.
     - Quality versions of building technologies with productivity, speed and efficiency bonuses (I3).
     - Engineer's diary (J): background choice, 72 entries from the design document triggered by game events, company logs in wrecks.
     - Ancient vaults with alien data cards and encrypted data; three alien technologies; decryption in the decipherer.
