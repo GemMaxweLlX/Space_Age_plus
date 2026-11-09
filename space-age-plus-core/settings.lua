@@ -15,6 +15,12 @@ data:extend({
   { type = "bool-setting", name = "sap-exploration-vanilla-planets", setting_type = "startup",
     default_value = false, order = "b-a" },
 
+  -- Дерево технологий
+  { type = "bool-setting", name = "sap-techtree-enabled", setting_type = "startup",
+    default_value = false, order = "c-a" },
+  { type = "int-setting", name = "sap-llk-chance", setting_type = "runtime-global",
+    default_value = 15, minimum_value = 10, maximum_value = 20, order = "c-b" },
+
   -- Глобальные хардкор-опции
   { type = "bool-setting", name = "sap-hardcore-strict-oxygen", setting_type = "runtime-global",
     default_value = false, order = "z-a" },

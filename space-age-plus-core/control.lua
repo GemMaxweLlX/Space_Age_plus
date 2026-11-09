@@ -2,15 +2,18 @@
 local oxygen = require("scripts.oxygen")
 local diary = require("scripts.diary")
 local exploration = require("scripts.exploration")
+local techtree = require("scripts.techtree")
 
 script.on_init(function()
   oxygen.on_init()
   exploration.on_init()
+  techtree.on_init()
 end)
 
 script.on_configuration_changed(function()
   oxygen.on_configuration_changed()
   exploration.on_configuration_changed()
+  techtree.on_configuration_changed()
 end)
 
 -- Кислород
@@ -34,5 +37,13 @@ for _, e in pairs({
   script.on_event(e, exploration.on_built, telescope_filter)
 end
 script.on_event(defines.events.on_rocket_launch_ordered, exploration.on_rocket_launch_ordered)
-script.on_event(defines.events.on_force_created, exploration.on_force_created)
+script.on_event(defines.events.on_force_created, function(event)
+  exploration.on_force_created(event)
+  techtree.on_force_created(event)
+end)
 script.on_event(defines.events.on_research_finished, exploration.on_research_finished)
+
+-- Дерево технологий
+script.on_event(defines.events.on_gui_opened, techtree.on_gui_opened)
+script.on_event(defines.events.on_gui_click, techtree.on_gui_click)
+script.on_event(defines.events.on_chunk_generated, techtree.on_chunk_generated)
