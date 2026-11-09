@@ -657,9 +657,15 @@ steps[3000] = function()
   local first_pos
   for i, armor in pairs({ "sap-stealth-suit", "modular-armor" }) do
     -- Персонажи должны стоять далеко друг от друга, иначе стелс одного уводит врага другого.
-    local cpos
-    for shift = 0, 30 do
-      cpos = clear_spot(surface, { 150 + i * 80 + shift * 60, -150 - shift * 40 })
+    local cpos, fallback
+    for shift = 0, 12 do
+      local ok, found = pcall(clear_spot, surface, { 150 + i * 80 + shift * 25, -150 - shift * 15 })
+      cpos = ok and found or nil
+      if not fallback and cpos
+          and (not first_pos or ((cpos.x - first_pos.x) ^ 2 + (cpos.y - first_pos.y) ^ 2) > 60 ^ 2) then
+        fallback = cpos
+      end
+      if not cpos then goto next_shift end
       -- Подальше от зон Механитов: их патрули законно находят игрока и в костюме.
       local near_zone = surface.count_entities_filtered({
         name = { "sap-control-server", "sap-control-server-heavy" }, position = cpos, radius = 90, limit = 1,
@@ -667,7 +673,10 @@ steps[3000] = function()
       if not near_zone and (not first_pos or ((cpos.x - first_pos.x) ^ 2 + (cpos.y - first_pos.y) ^ 2) > 60 ^ 2) then
         break
       end
+      cpos = nil
+      ::next_shift::
     end
+    cpos = cpos or fallback
     first_pos = first_pos or cpos
     local character = surface.create_entity({ name = "character", position = cpos, force = force })
     character.get_inventory(defines.inventory.character_armor).insert({ name = armor, count = 1 })
@@ -1057,6 +1066,21 @@ script.on_load(function()
   log("SAP-TEST INFO loaded save, continuing")
 end)
 
+-- Режим с игроком (MODE=player): свой набор шагов, обычные шаги не выполняются.
+local player_step_lists = {}
+local player_steps = setmetatable({}, {
+  __newindex = function(_, tick, fn)
+    player_step_lists[tick] = player_step_lists[tick] or {}
+    table.insert(player_step_lists[tick], fn)
+  end,
+})
+require("player_tests").register(player_steps, check, function()
+  local failures = 0
+  for _, r in pairs(results) do if not r then failures = failures + 1 end end
+  log("SAP-TEST DONE failures=" .. failures)
+  script.finish_test(failures == 0)
+end)
+
 -- Шаги считаются от тика, когда тестовый мод подключили (в MODE=migration карта уже шла).
 script.on_init(function()
   storage.t0 = game.tick
@@ -1065,15 +1089,23 @@ end)
 
 script.on_event(defines.events.on_tick, function(event)
   local t = event.tick - (storage.t0 or 0)
-  if t > 50 and t % 30 == 0 then
+  if script.test_arg ~= "player" and t > 50 and t % 30 == 0 then
     local ok, err = pcall(try_launch)
     if not ok then check("launch", false, err) end
   end
-  for _, step in pairs(step_lists[t] or {}) do
+  local lists = script.test_arg == "player" and player_step_lists or step_lists
+  for _, step in pairs(lists[t] or {}) do
     local ok, err = pcall(step)
     if not ok then check("step " .. event.tick, false, err) end
   end
 end)
+
+script.on_event(defines.events.on_entity_died, function(event)
+  if storage.stealth_1 and event.entity == storage.stealth_1 then
+    log("SAP-TEST INFO stealth character killed by " .. tostring(event.cause and event.cause.valid and event.cause.name)
+        .. " damage " .. tostring(event.damage_type and event.damage_type.name) .. " at tick " .. event.tick)
+  end
+end, { { filter = "type", type = "character" } })
 
 script.on_event(defines.events.on_rocket_launch_ordered, function(event)
   log("SAP-TEST INFO rocket launch ordered, pod=" .. tostring(event.rocket.attached_cargo_pod ~= nil))

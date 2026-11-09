@@ -55,7 +55,8 @@ FACTORIO=/path/to/factorio tools/run-tests.sh
 ```
 
 `MODE=saveload` continues the tests after a real save and load, `MODE=migration` adds the mods to a
-game that is already running. The suite starts with a progression audit that proves every
+game that is already running, `MODE=player` runs with a real (headless) player to test the windows,
+oxygen and the elevator. The suite starts with a progression audit that proves every
 technology is reachable from a fresh start.
 
 ## License

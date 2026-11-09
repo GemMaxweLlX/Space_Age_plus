@@ -12,6 +12,7 @@ local MECHANITES = { "sap-sentinel", "sap-stormbringer", "sap-disruptor", "sap-a
 local STEALTH_ARMOR = "sap-stealth-suit"
 local STEALTH_NOTICE = 6
 local STEALTH_SCAN = 24
+local STEALTH_RETREAT = 8
 local HACK_RADIUS = 7
 local HACK_CHANCE = 0.5
 local HACKABLE = { ["sap-sentinel"] = true, ["sap-stormbringer"] = true, ["sap-disruptor"] = true,
@@ -52,9 +53,16 @@ local function run_stealth(surface)
         name = MECHANITES, position = character.position, radius = STEALTH_SCAN,
       })) do
         local dx, dy = unit.position.x - character.position.x, unit.position.y - character.position.y
-        if dx * dx + dy * dy > STEALTH_NOTICE * STEALTH_NOTICE and unit.commandable then
-          unit.commandable.set_command({ type = defines.command.wander, distraction = defines.distraction.none,
-                                         radius = 8, ticks_to_wait = 120 })
+        local distance = math.sqrt(dx * dx + dy * dy)
+        if distance > STEALTH_NOTICE and unit.commandable then
+          -- Механит не замечает игрока и отходит от него, ни на что не отвлекаясь.
+          -- (Раньше он «бродил» рядом и случайно мог подойти ближе порога.)
+          local away = (distance + STEALTH_RETREAT) / distance
+          unit.commandable.set_command({
+            type = defines.command.go_to_location,
+            destination = { character.position.x + dx * away, character.position.y + dy * away },
+            distraction = defines.distraction.none, radius = 2,
+          })
         end
       end
     end

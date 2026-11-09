@@ -7,7 +7,8 @@
 #     saveload  — игра сохраняется на тике 2000, затем сохранение загружается и все
 #                 оставшиеся проверки идут уже после загрузки;
 #     migration — карта создаётся без модов Space Age+, затем моды добавляются
-#                 (проверка on_configuration_changed — как у игрока с существующим сохранением).
+#                 (проверка on_configuration_changed — как у игрока с существующим сохранением);
+#     player    — игра с настоящим игроком без экрана (--test-save): окна, кислород, лифт.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 : "${FACTORIO:?Укажите FACTORIO=/путь/к/папке/factorio}"
@@ -67,6 +68,16 @@ PY
     rm -f "$settings"
     grep -q "Saving progress: 100" "$LOG" || { echo "SAP-TEST FAIL saveload: server did not save"; exit 1; }
     grep -h "SAP-TEST FAIL\|Error" "$LOG" | sed 's/^/before save: /' || true
+    ;;
+  player)
+    # Игра с настоящим игроком (без экрана): окна, кислород, лифт.
+    install_mods
+    "$BIN" --create "$SAVE" >/dev/null
+    rm -rf "$tmp"
+    "$BIN" --test-save "$SAVE" --test-ticks 3000 --test-arg player >/dev/null 2>&1 || true
+    grep -h "SAP-TEST\|Error" "$LOG"
+    grep -q "SAP-TEST DONE failures=0" "$LOG"
+    exit $?
     ;;
   *) echo "Unknown MODE=$MODE"; exit 2 ;;
 esac

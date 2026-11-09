@@ -97,6 +97,14 @@ remote.add_interface("sap-diary", {
 
 -- Для автотестов.
 remote.add_interface("sap-core", {
+  -- Тесты с игроком: «нажатие» на элемент окна и на клавишу дневника (те же обработчики).
+  test_click = function(player_index, element)
+    local event = { element = element, player_index = player_index, name = defines.events.on_gui_click }
+    techtree.on_gui_click(event)
+    diary.on_gui_click(event)
+  end,
+  test_toggle_diary = function(player_index) diary.toggle({ player_index = player_index }) end,
+  test_set_llk_chance = function(value) settings.global["sap-llk-chance"] = { value = value } end, -- luacheck: ignore 122
   decipher = function(force_name, entity, choice, llk_roll)
     local names, message = techtree.test_run(game.forces[force_name], entity, choice, llk_roll)
     return { names = names, message = message }

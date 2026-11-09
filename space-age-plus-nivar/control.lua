@@ -44,6 +44,9 @@ end
 
 -- Для автотестов.
 remote.add_interface("sap-nivar", {
+  test_click = function(player_index, element)
+    caves.on_gui_click({ element = element, player_index = player_index, name = defines.events.on_gui_click })
+  end,
   set_cryostorm = function(active) cryostorm.set_active(active) end,
   cryostorm_tick = function() cryostorm.on_tick() end,
   wake_caves = function() return cryostorm.wake_caves() end,
