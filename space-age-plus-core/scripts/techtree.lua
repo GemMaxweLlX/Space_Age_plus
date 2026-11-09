@@ -14,6 +14,7 @@
 local techtree = {}
 
 local quality_bonus = require("scripts.quality_bonus")
+local diary = require("scripts.diary")
 
 local DECIPHERER = "sap-decipherer"
 local LOGIC_LAB = "sap-logic-lab"
@@ -293,7 +294,10 @@ local function choose(player, index)
   if not pending then return end
   local option = pending.options[index]
   if not option then return end
+  local was_unlocked = unlocked_for(player.force)[option.tech] ~= nil
   unlock(player.force, option.tech, option.quality)
+  local info = catalog()[option.tech]
+  diary.on_tech_unlocked(player.force, option.tech, option.quality, info and info.category, was_unlocked)
   player.force.print({ "sap-techtree.unlocked", prototypes.technology[option.tech].localised_name,
                        { "quality-name." .. option.quality } })
   if pending.card and pending.entity and pending.entity.valid then
@@ -343,6 +347,13 @@ function techtree.on_gui_opened(event)
     frame.run.caption = entity.name == DECIPHERER and { "sap-techtree.run" } or { "sap-techtree.run-llk" }
     frame.hint.caption = entity.name == DECIPHERER and { "sap-techtree.panel-hint" }
       or { "sap-techtree.panel-hint-llk", settings.global["sap-llk-chance"].value }
+  elseif entity.name == WRECK then
+    local s = state()
+    s.opened_wrecks = s.opened_wrecks or {}
+    if not s.opened_wrecks[entity.unit_number] then
+      s.opened_wrecks[entity.unit_number] = true
+      diary.on_wreck_opened(player, entity)
+    end
   elseif entity.name == STARTING_WRECK then
     local s = state()
     if not s.starting_wreck then

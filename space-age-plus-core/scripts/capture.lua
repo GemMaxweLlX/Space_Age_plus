@@ -5,6 +5,8 @@
 
 local capture = {}
 
+local diary = require("scripts.diary")
+
 local SEARCH_RADIUS = 3
 local CRYOSTORM_FAIL_CHANCE = 0.05
 
@@ -45,6 +47,7 @@ function capture.on_script_trigger_effect(event)
   nest.destroy()
   local captive = surface.create_entity({ name = entry.captive, position = nest_position, force = force })
   if captive then
+    diary.add(force, "capture-sa")
     force.print({ "sap-capture.captured", { "entity-name." .. entry.captive },
                   string.format("[gps=%d,%d,%s]", nest_position.x, nest_position.y, surface.name) })
   end

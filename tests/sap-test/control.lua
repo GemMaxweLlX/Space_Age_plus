@@ -16,7 +16,14 @@ local function techtree_on()
   return settings.startup["sap-techtree-enabled"].value
 end
 
-local steps = {}
+-- Шаги по тикам. Несколько шагов на один тик выполняются по порядку (не заменяют друг друга).
+local step_lists = {}
+local steps = setmetatable({}, {
+  __newindex = function(_, tick, fn)
+    step_lists[tick] = step_lists[tick] or {}
+    table.insert(step_lists[tick], fn)
+  end,
+})
 
 -- Тик 10: проверки прототипов и начального состояния ------------------------------
 steps[10] = function()
@@ -107,6 +114,7 @@ steps[40] = function()
   for i = 1, 40 do
     platform.eject_item({ name = "iron-plate" }, { hub.x + 3, hub.y + i % 5 }, { 0.1, 0 })
   end
+  platform.eject_item({ name = "sap-data-card-logistics" }, { hub.x + 3, hub.y }, { 0.1, 0 })
   check("debris: items ejected", #platform.ejected_items > 0, #platform.ejected_items)
 end
 
@@ -424,6 +432,8 @@ steps[190] = function()
   storage.capture_pos = nest.position
   surface.create_entity({ name = "sap-capture-rocket-solaris", position = { pos.x, pos.y + 10 }, target = nest.position,
                           speed = 0.3, force = "player" })
+  local scorch = surface.create_entity({ name = "sap-scorch", position = { pos.x + 30, pos.y }, force = "enemy" })
+  scorch.die("player")
   -- Ванильная ракета захвата не должна брать гнёзда SA+.
   local pos2 = surface.find_non_colliding_position("sap-scorch-nest", { 60, -60 }, 60, 2)
   local nest2 = surface.create_entity({ name = "sap-scorch-nest", position = pos2, force = "enemy" })
@@ -554,6 +564,14 @@ steps[29000] = function()
   check("satellites: mk1 found something", found >= 1, found)
   check("satellites: mk2 scouted one", scouted == 1, scouted)
 
+  local entries = {}
+  for _, key in pairs(remote.call("sap-diary", "entries", "player")) do entries[key] = true end
+  log("SAP-TEST INFO diary entries: " .. serpent.line(remote.call("sap-diary", "entries", "player")))
+  for _, key in pairs({ "sat-first", "sat-five-lost", "sat-mk2-ready", "emp-disruptor", "reinforcements", "capture-sa",
+                        "jettisoned-card", "kill-scorch-1" }) do
+    check("diary: entry " .. key, entries[key] == true)
+  end
+
   local launches = 0
   for _, r in pairs(results) do if not r then launches = launches + 1 end end
   log("SAP-TEST DONE failures=" .. launches)
@@ -564,8 +582,7 @@ script.on_event(defines.events.on_tick, function(event)
     local ok, err = pcall(try_launch)
     if not ok then check("launch", false, err) end
   end
-  local step = steps[event.tick]
-  if step then
+  for _, step in pairs(step_lists[event.tick] or {}) do
     local ok, err = pcall(step)
     if not ok then check("step " .. event.tick, false, err) end
   end

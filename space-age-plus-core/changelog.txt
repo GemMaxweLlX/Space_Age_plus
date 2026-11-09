@@ -6,4 +6,4 @@ Date: 2026-11-09
     - Planet exploration: telescope, generation 1 and 2 satellites.
     - Hidden technology tree: data cards, decipherer, logic lab complex, data wrecks (startup setting, off by default).
     - Quality versions of building technologies with productivity, speed and efficiency bonuses (I3).
-    - Engineer's diary window (J).
+    - Engineer's diary (J): background choice, 72 entries from the design document triggered by game events, company logs in wrecks.

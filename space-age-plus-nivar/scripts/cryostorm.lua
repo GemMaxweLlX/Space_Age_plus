@@ -8,6 +8,10 @@
 
 local cryostorm = {}
 
+local function diary_add(force, key)
+  if force and force.valid and remote.interfaces["sap-diary"] then remote.call("sap-diary", "add", force.name, key) end
+end
+
 cryostorm.TICK_INTERVAL = 300
 
 local SURFACE = "nivar"
@@ -67,6 +71,7 @@ local function release_packs(surface)
       type = { "assembling-machine", "furnace", "mining-drill", "electric-pole", "container" },
     })[1]
     if target then
+      diary_add(target.force, "blizzard-storm")
       for _ = 1, PACK_SIZE do
         local position = surface.find_non_colliding_position("sap-blizzard", nest.position, 10, 1)
         local unit = position and surface.create_entity({ name = "sap-blizzard", position = position, force = nest.force })

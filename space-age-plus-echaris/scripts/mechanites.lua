@@ -11,6 +11,10 @@
 
 local mechanites = {}
 
+local function diary_add(force, key)
+  if force and force.valid and remote.interfaces["sap-diary"] then remote.call("sap-diary", "add", force.name, key) end
+end
+
 mechanites.TICK_INTERVAL = 120
 mechanites.WAVE_INTERVAL = 10 * 60 * 60
 
@@ -114,6 +118,10 @@ function mechanites.on_gui_opened(event)
   local servers = entity.surface.count_entities_filtered({
     name = SERVERS, position = entity.position, radius = CENTER_LOCK_RADIUS, limit = 1,
   })
+  if servers == 0 and entity.name == "sap-center-suppression" then
+    local player = game.get_player(event.player_index)
+    if player then diary_add(player.force, "find-echaris-military") end
+  end
   if servers > 0 then
     local player = game.get_player(event.player_index)
     if player then
@@ -141,6 +149,7 @@ function mechanites.on_entity_damaged(event)
   local s = state()
   if s.called[entity.unit_number] then return end
   s.called[entity.unit_number] = true
+  if event.cause and event.cause.valid then diary_add(event.cause.force, "reinforcements") end
   local target = event.cause and event.cause.valid and event.cause.position or entity.position
   for _ = 1, REINFORCEMENTS do
     local unit = place(entity.surface, "sap-stormbringer", entity.position, 8, entity.force)
@@ -175,6 +184,7 @@ local function emp(surface)
     })
     for _, turret in pairs(targets) do
       if turret.force ~= disruptor.force then
+        diary_add(turret.force, "emp-disruptor")
         turret.disabled_by_script = true
         s.disabled_turrets[turret.unit_number] = { entity = turret, until_tick = game.tick + EMP_TICKS }
       end

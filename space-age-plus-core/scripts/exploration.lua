@@ -9,6 +9,8 @@
 
 local exploration = {}
 
+local diary = require("scripts.diary")
+
 local TELESCOPE = "sap-telescope"
 local MK1 = "sap-satellite-mk1"
 local MK2 = "sap-satellite-mk2"
@@ -110,11 +112,15 @@ local function launch_mk1(force, s)
     s.found[planet] = true
     local distance = math.floor(prototypes.space_location[planet].distance * 1000 + 0.5)
     force.print({ "sap-exploration.mk1-found", planet_name(planet), distance })
+    diary.on_satellite(force, "mk1-found", planet, s.launches)
   else
     force.print({ "sap-exploration.mk1-nothing" })
+    diary.on_satellite(force, "mk1-nothing", nil, s.launches)
   end
+  diary.on_satellite(force, "mk1", nil, s.launches)
   if s.launches == s.launches_needed then
     force.print({ "sap-exploration.mk2-ready" })
+    diary.on_satellite(force, "mk2-ready", nil, s.launches)
   end
 end
 
@@ -131,6 +137,7 @@ local function launch_mk2(force, s)
   s.found[target] = true
   s.scouted[target] = true
   force.print({ "sap-exploration.mk2-scouted", planet_name(target) })
+  diary.on_satellite(force, "scouted", target, s.launches)
 end
 
 function exploration.on_rocket_launch_ordered(event)

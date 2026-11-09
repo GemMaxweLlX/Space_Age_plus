@@ -42,30 +42,54 @@ script.on_event(defines.events.on_research_finished, function(event)
   quality_bonus.on_research_finished(event)
 end)
 
--- Дерево технологий
+-- Дерево технологий и дневник: у мода один обработчик на событие, поэтому общие.
 script.on_event(defines.events.on_gui_opened, techtree.on_gui_opened)
-script.on_event(defines.events.on_gui_click, techtree.on_gui_click)
+script.on_event(defines.events.on_gui_click, function(event)
+  techtree.on_gui_click(event)
+  diary.on_gui_click(event)
+end)
 script.on_event(defines.events.on_chunk_generated, techtree.on_chunk_generated)
 
--- Бонусы технологий по качеству
-local bonus_filter = {
-  { filter = "type", type = "assembling-machine" }, { filter = "type", type = "furnace" },
-  { filter = "type", type = "mining-drill" }, { filter = "type", type = "lab" },
-}
+-- Постройка: телескоп, бонусы качества, дневник (все постройки игрока).
 for _, e in pairs({ defines.events.on_built_entity, defines.events.on_robot_built_entity,
                     defines.events.script_raised_built, defines.events.script_raised_revive }) do
   script.on_event(e, function(event)
-    if event.entity and event.entity.valid and event.entity.name == "sap-telescope" then
-      exploration.on_built(event)
-    else
-      quality_bonus.on_built(event)
-    end
-  end, { { filter = "name", name = "sap-telescope" }, table.unpack(bonus_filter) })
+    local entity = event.entity
+    if not (entity and entity.valid) then return end
+    if entity.name == "sap-telescope" then exploration.on_built(event) end
+    quality_bonus.on_built(event)
+    diary.on_built(event)
+  end)
 end
 for _, e in pairs({ defines.events.on_player_mined_entity, defines.events.on_robot_mined_entity,
-                    defines.events.on_entity_died, defines.events.script_raised_destroy }) do
-  script.on_event(e, quality_bonus.on_removed, bonus_filter)
+                    defines.events.script_raised_destroy }) do
+  script.on_event(e, quality_bonus.on_removed)
 end
+script.on_event(defines.events.on_entity_died, function(event)
+  quality_bonus.on_removed(event)
+  diary.on_entity_died(event)
+end)
+
+-- Дневник: остальные события
+script.on_event(defines.events.on_entity_damaged, diary.on_entity_damaged, { { filter = "type", type = "character" } })
+script.on_event(defines.events.on_player_crafted_item, diary.on_player_crafted_item)
+script.on_event(defines.events.on_player_mined_item, diary.on_player_mined_item)
+script.on_event(defines.events.on_rocket_launched, diary.on_rocket_launched)
+script.on_event(defines.events.on_player_changed_surface, diary.on_player_changed_surface)
+script.on_event(defines.events.on_player_died, diary.on_player_died)
+script.on_nth_tick(diary.TICK_INTERVAL, diary.on_tick)
+remote.add_interface("sap-diary", {
+  add = function(force_name, key)
+    local force = game.forces[force_name]
+    if force then diary.add(force, key) end
+  end,
+  entries = function(force_name)
+    local result = {}
+    local s = storage.diary and storage.diary.forces[game.forces[force_name].index]
+    for _, e in pairs(s and s.entries or {}) do result[#result + 1] = e.key end
+    return result
+  end,
+})
 
 -- Для автотестов.
 remote.add_interface("sap-core", {

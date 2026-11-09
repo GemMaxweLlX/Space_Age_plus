@@ -10,6 +10,10 @@
 
 local debris = {}
 
+local function diary_add(force, key)
+  if force and force.valid and remote.interfaces["sap-diary"] then remote.call("sap-diary", "add", force.name, key) end
+end
+
 debris.TICK_INTERVAL = 60
 debris.FALL_INTERVAL = 5 * 60 * 60
 
@@ -99,7 +103,10 @@ local function record_ejected(platform, key, segment)
     if ejected.creation_tick > last then
       local item = ejected.item
       local name = type(item) == "table" and (item.name and (item.name.name or item.name)) or item
-      if type(name) == "string" then add(c, kind_of(name), 1) end
+      if type(name) == "string" then
+        add(c, kind_of(name), 1)
+        if string.sub(name, 1, 14) == "sap-data-card-" then diary_add(platform.force, "jettisoned-card") end
+      end
       if ejected.creation_tick > newest then newest = ejected.creation_tick end
     end
   end
