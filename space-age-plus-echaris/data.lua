@@ -8,3 +8,6 @@ require("prototypes.planet")
 require("prototypes.storm")
 require("prototypes.mechanites")
 require("prototypes.technologies")
+
+-- Хардкор «Без доставки с платформы».
+sap.register_no_delivery("echaris", "sap-hardcore-echaris-no-delivery")

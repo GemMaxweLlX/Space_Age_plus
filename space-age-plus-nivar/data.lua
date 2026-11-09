@@ -8,3 +8,6 @@ sap.register_oxygen_planet("nivar-caves", { solution = "generator" })
 require("prototypes.planet")
 require("prototypes.content")
 require("prototypes.creatures")
+
+-- Хардкор «Без доставки с платформы».
+sap.register_no_delivery("nivar", "sap-hardcore-nivar-no-delivery")

@@ -5,3 +5,4 @@ Date: 2026-11-09
     - Echaris planet orbiting Fulgora, discovery technology.
     - Permanent magnetic storm: machines at 50-70%, robots damaged outside stabilizer areas, roboports lose power.
     - Storm stabilizer and EMP filter for the oxygen collector.
+    - Hardcore: no platform delivery (cargo pods return to the hub).

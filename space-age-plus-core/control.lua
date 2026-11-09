@@ -6,6 +6,7 @@ local techtree = require("scripts.techtree")
 local quality_bonus = require("scripts.quality_bonus")
 local capture = require("scripts.capture")
 local condensing = require("scripts.condensing")
+local no_delivery = require("scripts.no_delivery")
 
 script.on_init(function()
   oxygen.on_init()
@@ -93,6 +94,8 @@ remote.add_interface("sap-diary", {
 
 -- Для автотестов.
 remote.add_interface("sap-core", {
+  no_delivery_override = function(surface_name, value) no_delivery.set_override(surface_name, value) end,
+  check_pod = function(pod) return no_delivery.check_pod(pod, nil) end,
   unlock_tech = function(force_name, tech, quality) techtree.unlock(game.forces[force_name], tech, quality) end,
   researched_quality = function(force_name, tech) return quality_bonus.researched_quality(game.forces[force_name], tech) end,
 })
@@ -102,3 +105,6 @@ script.on_event(defines.events.on_script_trigger_effect, capture.on_script_trigg
 
 -- Конденсация пара (паровая турбина Mk2, мега-турбина)
 script.on_nth_tick(condensing.TICK_INTERVAL + 2, condensing.on_tick)
+
+-- Хардкор «Без доставки с платформы»
+script.on_event(defines.events.on_cargo_pod_finished_ascending, no_delivery.on_cargo_pod_finished_ascending)

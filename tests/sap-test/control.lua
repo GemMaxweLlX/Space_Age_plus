@@ -536,6 +536,35 @@ steps[2600] = function()
   check("debris: echaris orbit gives electrified debris", flavored > 0, flavored)
 end
 
+-- Тик 2700: хардкор «без доставки» на Echaris ----------------------------------------
+steps[2700] = function()
+  local platform = storage.echaris_platform
+  if not (platform and platform.valid and platform.hub) then return end
+  game.planets["echaris"].create_surface()
+  remote.call("sap-core", "no_delivery_override", "echaris", true)
+  local pod = platform.hub.create_cargo_pod()
+  check("no-delivery: pod created", pod ~= nil)
+  if not pod then return end
+  pod.get_inventory(defines.inventory.cargo_unit).insert({ name = "iron-plate", count = 10 })
+  pod.cargo_pod_destination = { type = defines.cargo_destination.surface, surface = game.surfaces["echaris"],
+                                position = { 0, 0 } }
+  storage.hub_iron_before = platform.hub.get_inventory(defines.inventory.hub_main).get_item_count("iron-plate")
+  storage.pod = pod
+end
+
+steps[4200] = function()
+  local platform = storage.echaris_platform
+  if not (platform and platform.valid and platform.hub) then return end
+  local after = platform.hub.get_inventory(defines.inventory.hub_main).get_item_count("iron-plate")
+  local landed = game.surfaces["echaris"].find_entities_filtered({ name = "item-on-ground" })
+  local on_echaris = game.surfaces["echaris"].count_entities_filtered({ type = "cargo-pod" })
+  log(string.format("SAP-TEST INFO hub iron %d -> %d, pods on echaris %d, items on ground %d",
+      storage.hub_iron_before or -1, after, on_echaris, #landed))
+  check("no-delivery: cargo came back to the hub", after >= (storage.hub_iron_before or 0) + 10,
+        (storage.hub_iron_before or -1) .. " -> " .. after)
+  remote.call("sap-core", "no_delivery_override", "echaris", false)
+end
+
 -- Конец ---------------------------------------------------------------------------
 -- Мусор проверяем раньше: куски медленно пролетают мимо и улетают с карты.
 steps[2900] = function()
