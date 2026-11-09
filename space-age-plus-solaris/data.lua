@@ -8,3 +8,20 @@ require("prototypes.planet")
 require("prototypes.content")
 require("prototypes.power")
 require("prototypes.creatures")
+
+-- Улучшенная капсула доставки (S4): без неё грузовые капсулы на Solaris не садятся.
+sap.register_no_delivery("solaris", nil, "sap-improved-delivery-capsule")
+data:extend({
+  {
+    type = "technology", name = "sap-improved-delivery-capsule",
+    icons = { { icon = "__base__/graphics/icons/cargo-pod.png", icon_size = 64, tint = { r = 1, g = 0.75, b = 0.45, a = 1 } } },
+    effects = {}, prerequisites = { "sap-planet-discovery-solaris" },
+    unit = {
+      count = 500, time = 60,
+      ingredients = {
+        { "automation-science-pack", 1 }, { "logistic-science-pack", 1 }, { "chemical-science-pack", 1 },
+        { "space-science-pack", 1 }, { "metallurgic-science-pack", 1 },
+      },
+    },
+  },
+})

@@ -9,11 +9,18 @@ local function rules()
   return proto and proto.data or {}
 end
 
-local function forbidden(surface_name)
-  local setting = rules()[surface_name]
-  if not setting then return false end
+local function forbidden(surface_name, force)
+  local rule = rules()[surface_name]
+  if not rule then return false end
   if storage.no_delivery_override and storage.no_delivery_override[surface_name] then return true end
-  return settings.startup[setting] and settings.startup[setting].value == true
+  if rule.unless_tech then
+    local tech = force.technologies[rule.unless_tech]
+    if tech and tech.researched then return false end
+  end
+  if rule.setting then
+    return settings.startup[rule.setting] and settings.startup[rule.setting].value == true
+  end
+  return true
 end
 
 local function target_surface(destination)
@@ -29,9 +36,15 @@ function no_delivery.check_pod(pod, player_index)
   local origin = pod.cargo_pod_origin
   if not (origin and origin.valid and origin.surface.platform) then return false end
   local target = target_surface(pod.cargo_pod_destination)
-  if not (target and forbidden(target.name)) then return false end
+  if not (target and forbidden(target.name, origin.force)) then return false end
   pod.cargo_pod_destination = { type = defines.cargo_destination.station, station = origin }
-  origin.force.print({ "sap-no-delivery.returned", { "space-location-name." .. target.name } })
+  local rule = rules()[target.name]
+  if rule.unless_tech then
+    origin.force.print({ "sap-no-delivery.needs-tech", { "space-location-name." .. target.name },
+                         { "technology-name." .. rule.unless_tech } })
+  else
+    origin.force.print({ "sap-no-delivery.returned", { "space-location-name." .. target.name } })
+  end
   return true
 end
 

@@ -202,14 +202,15 @@ api.NO_DELIVERY = "sap-no-delivery-planets"
 --- Хардкор «Без доставки с платформы»: если настройка включена, грузовые капсулы с платформ
 --- на эту планету возвращаются обратно в хаб (игрока капсула везёт как обычно).
 --- @param planet string имя поверхности планеты
---- @param setting string имя startup-настройки (bool)
-function api.register_no_delivery(planet, setting)
+--- @param setting string|nil имя startup-настройки (bool); nil — запрет действует всегда
+--- @param unless_tech string|nil технология, после которой доставка разрешена
+function api.register_no_delivery(planet, setting, unless_tech)
   local proto = data.raw["mod-data"] and data.raw["mod-data"][api.NO_DELIVERY]
   if not proto then
     data:extend({ { type = "mod-data", name = api.NO_DELIVERY, data = {} } })
     proto = data.raw["mod-data"][api.NO_DELIVERY]
   end
-  proto.data[planet] = setting
+  proto.data[planet] = { setting = setting, unless_tech = unless_tech }
 end
 
 api.CAPTURABLE = "sap-capturable-nests"

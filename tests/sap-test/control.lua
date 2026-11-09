@@ -632,6 +632,44 @@ steps[3900] = function()
   check("stealth: without suit gets attacked", not (plain and plain.valid) or p_hp < plain.max_health, p_hp)
 end
 
+-- Тики 4300+: капсула доставки на Solaris -----------------------------------------
+local function send_pod(platform, surface_name, item, count)
+  local pod = platform.hub.create_cargo_pod()
+  if not pod then return nil end
+  pod.get_inventory(defines.inventory.cargo_unit).insert({ name = item, count = count })
+  pod.cargo_pod_destination = { type = defines.cargo_destination.surface, surface = game.surfaces[surface_name],
+                                position = { 0, 0 } }
+  return pod
+end
+
+steps[4300] = function()
+  local force = game.forces.player
+  force.unlock_space_location("solaris")
+  local platform = force.create_space_platform({ name = "sap-test-solaris", planet = "solaris",
+                                                 starter_pack = "space-platform-starter-pack" })
+  platform.apply_starter_pack()
+  storage.solaris_platform = platform
+end
+
+steps[4310] = function()
+  local platform = storage.solaris_platform
+  check("capsule: pod without tech created", send_pod(platform, "solaris", "copper-plate", 7) ~= nil)
+end
+
+steps[5800] = function()
+  local platform = storage.solaris_platform
+  local back = platform.hub.get_inventory(defines.inventory.hub_main).get_item_count("copper-plate")
+  check("capsule: without tech cargo returns to hub", back == 7, back)
+  game.forces.player.technologies["sap-improved-delivery-capsule"].researched = true
+  send_pod(platform, "solaris", "copper-plate", 5)
+end
+
+steps[7300] = function()
+  local platform = storage.solaris_platform
+  local back = platform.hub.get_inventory(defines.inventory.hub_main).get_item_count("copper-plate")
+  check("capsule: with tech cargo lands on solaris", back == 7, back)
+end
+
 -- Конец ---------------------------------------------------------------------------
 -- Мусор проверяем раньше: куски медленно пролетают мимо и улетают с карты.
 steps[2900] = function()

@@ -7,3 +7,4 @@ Date: 2026-11-09
     - Coronal mass ejections (1-5 rays), protective umbrella and ray catcher.
     - Machine overheating with cooling radiators.
     - Scorch and Magmar nests, solitary Molten; aggressive creatures hardcore setting.
+    - Improved delivery capsule: cargo pods cannot land on Solaris without it (S4).
