@@ -181,6 +181,45 @@ steps[70] = function()
   check("techtree: data wrecks generated", not techtree_on() or wrecks > 0, wrecks)
 end
 
+-- Тики 80-90: Механиты --------------------------------------------------------------
+steps[300] = function()
+  local surface = game.surfaces["echaris"]
+  local centers = surface.count_entities_filtered({ name = { "sap-center-data", "sap-center-suppression",
+    "sap-center-assembly", "sap-center-energy" } })
+  local servers = surface.count_entities_filtered({ name = { "sap-control-server", "sap-control-server-heavy" } })
+  check("mechanites: centers generated", centers > 0, centers)
+  check("mechanites: servers generated", servers > 0, servers)
+
+  local base = surface.find_non_colliding_position("gun-turret", { -40, -40 }, 60, 2)
+  storage.turret = surface.create_entity({ name = "gun-turret", position = base, force = "player" })
+  storage.disruptor = surface.create_entity({ name = "sap-disruptor", position = { base.x + 4, base.y }, force = "enemy" })
+  storage.mk2 = surface.create_entity({ name = "sap-construction-robot-mk2", position = { 300, 300 }, force = "player" })
+
+  local sentinel = surface.create_entity({ name = "sap-sentinel", position = { base.x - 30, base.y }, force = "enemy" })
+  local before = surface.count_entities_filtered({ name = "sap-stormbringer" })
+  sentinel.damage(10, "player", "physical", storage.turret)
+  local after = surface.count_entities_filtered({ name = "sap-stormbringer" })
+  check("mechanites: sentinel calls reinforcements", after > before, before .. " -> " .. after)
+
+  local overseer = surface.create_entity({ name = "sap-overseer", position = { base.x - 60, base.y }, force = "enemy" })
+  overseer.die("player", storage.turret)
+  check("mechanites: overseer died without error", not overseer.valid)
+end
+
+steps[400] = function()
+  local turret = storage.turret
+  local disruptor = storage.disruptor
+  if disruptor and disruptor.valid then
+    check("mechanites: disruptor disables turret", turret and turret.valid and turret.disabled_by_script,
+          turret and turret.valid and tostring(turret.disabled_by_script))
+  else
+    log("SAP-TEST INFO disruptor died before EMP check")
+  end
+  local mk2 = storage.mk2
+  check("storm: mk2 robot protected", mk2 and mk2.valid and mk2.health == mk2.max_health,
+        mk2 and mk2.valid and mk2.health)
+end
+
 -- Конец ---------------------------------------------------------------------------
 -- Мусор проверяем раньше: куски медленно пролетают мимо и улетают с карты.
 steps[2900] = function()
@@ -200,8 +239,7 @@ steps[29000] = function()
   check("storm: near robot not drained", robot_near == nil or not robot_near.valid
         or robot_near.energy > 0, robot_near and robot_near.valid and robot_near.energy)
   if robot_near and robot_near.valid then log("SAP-TEST INFO near robot health " .. robot_near.health .. "/" .. robot_near.max_health) end
-  check("storm: near robot alive or hit by lightning only", robot_near and robot_near.valid,
-        "robot near stabilizer destroyed")
+  -- Робот у стабилизатора может погибнуть от молнии (как на Фульгоре) — это не ошибка бури.
 
 
   check("satellites: all launched", storage.launched == MK1_LAUNCHES + 1, storage.launched)

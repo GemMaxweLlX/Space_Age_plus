@@ -15,3 +15,16 @@ for _, e in pairs({
 }) do
   script.on_event(e, storm.on_stabilizer_built, built_filter)
 end
+
+-- Механиты
+local mechanites = require("scripts.mechanites")
+script.on_nth_tick(mechanites.TICK_INTERVAL + 1, mechanites.on_tick)
+script.on_nth_tick(mechanites.WAVE_INTERVAL, mechanites.on_wave_tick)
+script.on_event(defines.events.on_chunk_generated, mechanites.on_chunk_generated)
+script.on_event(defines.events.on_gui_opened, mechanites.on_gui_opened)
+script.on_event(defines.events.on_entity_damaged, mechanites.on_entity_damaged,
+  { { filter = "name", name = "sap-sentinel" } })
+script.on_event(defines.events.on_entity_died, mechanites.on_entity_died, {
+  { filter = "name", name = "sap-sentinel" },
+  { filter = "name", name = "sap-overseer" },
+})

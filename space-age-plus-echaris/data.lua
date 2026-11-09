@@ -6,3 +6,5 @@ sap.register_oxygen_planet("echaris", { solution = "collector" })
 
 require("prototypes.planet")
 require("prototypes.storm")
+require("prototypes.mechanites")
+require("prototypes.technologies")

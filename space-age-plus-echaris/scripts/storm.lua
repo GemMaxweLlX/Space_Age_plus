@@ -18,7 +18,10 @@ local LEVEL_MIN_TICKS = 3 * 60 * 60 -- уровень держится 3-8 ми�
 local LEVEL_MAX_TICKS = 8 * 60 * 60
 local ROBOT_DAMAGE_FRACTION = 0.04 -- доля здоровья за проверку
 local ROBOT_ENERGY_DRAIN = 0.15 -- доля энергии за проверку
-local PROTECTED_ROBOTS = {} -- сюда попадут дроны Mk2 с защитой от бури
+local PROTECTED_ROBOTS = { -- дроны Mk2 со встроенной защитой от бури
+  ["sap-logistic-robot-mk2"] = true,
+  ["sap-construction-robot-mk2"] = true,
+}
 
 local function state()
   storage.storm = storage.storm or { level = 2, next_change = 0, stabilizers = {} }
