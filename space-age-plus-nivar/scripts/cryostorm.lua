@@ -11,7 +11,7 @@ local cryostorm = {}
 cryostorm.TICK_INTERVAL = 300
 
 local SURFACE = "nivar"
-local HEATER, HEATER_RADIUS = "sap-cryo-heater", 8
+local HEATERS = { ["sap-cryo-heater"] = 8, ["sap-cryo-heater-mk2"] = 12 }
 local DOME, DOME_RADIUS = "sap-cryo-dome", 24
 local MACHINE_TYPES = { "assembling-machine", "furnace", "mining-drill", "lab", "inserter" }
 local STORM_MIN, STORM_MAX = 2 * 60 * 60, 4 * 60 * 60
@@ -55,7 +55,7 @@ local function protected_set(surface)
       end
     end
   end
-  mark(HEATER, HEATER_RADIUS)
+  for name, radius in pairs(HEATERS) do mark(name, radius) end
   mark(DOME, DOME_RADIUS)
   return set
 end

@@ -13,7 +13,8 @@ storm.TICK_INTERVAL = 60
 
 local SURFACE = "aquara"
 local SHIELD = "sap-storm-shield"
-local ANCHOR = "sap-storm-anchor"
+local ANCHORS = { "sap-storm-anchor", "sap-storm-anchor-mk2" }
+local FORECAST_TICKS = 60 * 60
 local SHIELD_RADIUS = 20
 local ANCHOR_PULL_RADIUS = 48
 local LEVEL_MIN_TICKS, LEVEL_MAX_TICKS = 3 * 60 * 60, 8 * 60 * 60
@@ -40,8 +41,19 @@ local function apply_level(surface, level)
   surface.global_effect = level > 0 and { speed = -SPEED_PENALTY[level] } or nil
 end
 
+local function forecast(s)
+  if s.forecasted or game.tick < s.next_change - FORECAST_TICKS then return end
+  s.forecasted = true
+  for _, force in pairs(game.forces) do
+    local tech = force.technologies["sap-storm-forecaster"]
+    if tech and tech.researched then force.print({ "sap-aquara.forecast" }) end
+  end
+end
+
 local function update_level(surface, s)
+  forecast(s)
   if game.tick < s.next_change then return end
+  s.forecasted = false
   local min = permanent() and 1 or 0
   s.level = math.random(min, 3)
   s.next_change = game.tick + math.random(LEVEL_MIN_TICKS, LEVEL_MAX_TICKS)
@@ -80,7 +92,7 @@ end
 
 local function update_tornado(surface, tornado)
   local anchor = surface.find_entities_filtered({
-    name = ANCHOR, position = tornado.position, radius = ANCHOR_PULL_RADIUS, limit = 1,
+    name = ANCHORS, position = tornado.position, radius = ANCHOR_PULL_RADIUS, limit = 1,
   })[1]
   local goal = anchor and anchor.position or tornado.target
   local position, distance = move_towards(tornado.position, goal, STEP)

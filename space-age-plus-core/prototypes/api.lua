@@ -98,6 +98,105 @@ function api.register_condensing_generator(generator, ratio)
   proto.data[generator] = ratio
 end
 
+local function util_copy(t) return require("util").table.deepcopy(t) end
+
+local ENTITY_TYPES = {
+  "assembling-machine", "furnace", "mining-drill", "radar", "roboport", "storage-tank", "pump", "offshore-pump",
+  "generator", "pipe", "pipe-to-ground", "heat-pipe", "transport-belt", "underground-belt", "splitter", "wall",
+  "gate", "electric-turret", "ammo-turret", "fluid-turret", "electric-pole", "reactor", "burner-generator",
+  "lamp", "boiler", "accumulator", "solar-panel", "lab", "agricultural-tower", "inserter", "container",
+  "logistic-container", "beacon", "asteroid-collector", "lightning-attractor",
+}
+local ITEM_TYPES = { "item", "item-with-entity-data", "armor", "gun", "ammo", "capsule", "module", "rail-planner" }
+
+local function find_entity(name)
+  for _, t in pairs(ENTITY_TYPES) do
+    if data.raw[t] and data.raw[t][name] then return data.raw[t][name] end
+  end
+  return nil
+end
+
+local function find_item(name)
+  for _, t in pairs(ITEM_TYPES) do
+    if data.raw[t] and data.raw[t][name] then return data.raw[t][name] end
+  end
+  return nil
+end
+
+local function tinted_icons(proto, tint)
+  if proto.icons then
+    local icons = util_copy(proto.icons)
+    for _, layer in pairs(icons) do layer.tint = tint end
+    return icons
+  end
+  return { { icon = proto.icon, icon_size = proto.icon_size or 64, tint = tint } }
+end
+
+
+--- Улучшенная копия ванильной постройки (или брони/оружия) с предметом, рецептом и
+--- технологией. Технология создаётся при первом упоминании и дополняется при следующих.
+--- @param def table {
+---   base = "electric-furnace", name = "sap-electric-furnace-mk2", tint = {...},
+---   change = function(entity, item) end,  -- правит копию
+---   ingredients = { {"electric-furnace", 1}, {"sap-mechanite-core", 1} }, time = 10,
+---   tech = { name = "...", icon = "...", count = 500, prerequisites = {...}, science = {...} } }
+function api.upgrade(def)
+  local tint = def.tint or { r = 0.8, g = 0.8, b = 1, a = 1 }
+  local base_entity = find_entity(def.base)
+  local base_item = find_item(def.base)
+  assert(base_item, "Space Age+: no item " .. def.base)
+  local item = util_copy(base_item)
+  item.name = def.name
+  item.icons = tinted_icons(base_item, tint)
+  item.icon = nil
+  item.order = (base_item.order or "z") .. "-z[sap]"
+  local entity
+  if base_entity and base_item.place_result then
+    entity = util_copy(base_entity)
+    entity.name = def.name
+    entity.icons = tinted_icons(base_entity, tint)
+    entity.icon = nil
+    if entity.minable then
+      entity.minable.result = def.name
+      entity.minable.results = nil
+    end
+    entity.next_upgrade = nil
+    entity.placeable_by = nil
+    item.place_result = def.name
+  end
+  if def.change then def.change(entity, item) end
+  local ingredients = {}
+  for _, i in pairs(def.ingredients) do
+    ingredients[#ingredients + 1] = { type = "item", name = i[1], amount = i[2] }
+  end
+  data:extend({
+    item,
+    {
+      type = "recipe", name = def.name, enabled = false, energy_required = def.time or 10,
+      ingredients = ingredients, results = { { type = "item", name = def.name, amount = def.result_count or 1 } },
+    },
+  })
+  if entity then data:extend({ entity }) end
+
+  local tech = data.raw.technology[def.tech.name]
+  if not tech then
+    data:extend({
+      {
+        type = "technology",
+        name = def.tech.name,
+        icons = def.tech.icon and { { icon = def.tech.icon, icon_size = def.tech.icon_size or 64, tint = tint } }
+          or tinted_icons(base_item, tint),
+        effects = {},
+        prerequisites = def.tech.prerequisites,
+        unit = { count = def.tech.count or 500, time = 60, ingredients = def.tech.science },
+      },
+    })
+    tech = data.raw.technology[def.tech.name]
+  end
+  table.insert(tech.effects, { type = "unlock-recipe", recipe = def.name })
+  return entity, item
+end
+
 api.CAPTURABLE = "sap-capturable-nests"
 
 --- Захват ульев SA+ (docs: Глобальные механики → Захват ульев SA+).

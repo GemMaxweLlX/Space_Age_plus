@@ -220,3 +220,83 @@ data:extend({
   tech("sap-storm-anchor", "__base__/graphics/icons/accumulator.png", { "sap-storm-anchor" }, 1000,
        { "sap-storm-shield", "electric-energy-accumulators" }),
 })
+
+-- Остальные технологии Aquara (docs: Техи планет → Aquara) --------------------------------
+local function aquara_tech(name, icon, count, prerequisite)
+  return { name = name, icon = icon, count = count or 600,
+           prerequisites = { "sap-planet-discovery-aquara", prerequisite }, science = AQUARA_PACKS }
+end
+
+-- Водная башня Mk2: больше урожай (объединяет «Водный участок Mk2»: ускоренный рост).
+sap.upgrade({
+  base = "sap-water-tower", name = "sap-water-tower-mk2", tint = { r = 0.3, g = 0.6, b = 1, a = 1 },
+  change = function(e) e.crafting_speed = e.crafting_speed * 2 end,
+  ingredients = { { "sap-water-tower", 1 }, { "carbon-fiber", 10 }, { "sap-carapace", 5 } },
+  tech = aquara_tech("sap-water-tower-mk2", "__space-age__/graphics/icons/agricultural-tower.png", 700),
+})
+-- Ускоренная переработка: биокамера быстрее.
+sap.upgrade({
+  base = "biochamber", name = "sap-biochamber-mk2", tint = TINT,
+  change = function(e) e.crafting_speed = e.crafting_speed * 1.5 end,
+  ingredients = { { "biochamber", 1 }, { "sap-venom-gland", 5 } },
+  tech = aquara_tech("sap-accelerated-processing", "__space-age__/graphics/icons/biochamber.png", 700),
+})
+-- Штормовой якорь Mk2: выдерживает сильные торнадо, тянет издалека, запасает больше.
+sap.upgrade({
+  base = "sap-storm-anchor", name = "sap-storm-anchor-mk2", tint = { r = 0.3, g = 0.6, b = 1, a = 1 },
+  change = function(e) e.energy_source.buffer_capacity = "500MJ" e.energy_source.output_flow_limit = "15MW" end,
+  ingredients = { { "sap-storm-anchor", 2 }, { "sap-abyss-core", 1 } },
+  tech = aquara_tech("sap-storm-anchor-mk2", "__base__/graphics/icons/accumulator.png", 1000, "sap-storm-anchor"),
+})
+-- Подводный бур: глубоководная руда со дна.
+sap.upgrade({
+  base = "sap-water-tower", name = "sap-underwater-drill", tint = { r = 0.5, g = 0.5, b = 0.7, a = 1 },
+  change = function(e) e.crafting_categories = { "sap-underwater-drilling" } end,
+  ingredients = { { "electric-mining-drill", 2 }, { "carbon-fiber", 10 }, { "pipe", 10 } },
+  tech = aquara_tech("sap-underwater-drill", "__base__/graphics/icons/electric-mining-drill.png", 700),
+})
+data:extend({
+  { type = "recipe-category", name = "sap-underwater-drilling" },
+  recipe({
+    name = "sap-underwater-ore", categories = { "sap-underwater-drilling" }, energy_required = 6,
+    icons = tinted("__base__/graphics/icons/iron-ore.png"),
+    ingredients = { { type = "fluid", name = "water", amount = 100 } },
+    results = {
+      { type = "item", name = "iron-ore", amount = 3 }, { type = "item", name = "copper-ore", amount = 2 },
+      { type = "item", name = "stone", amount = 1, independent_probability = 0.5 },
+    },
+    surface_conditions = on_aquara(),
+  }),
+  -- Переработка ядовитых желёз: химические рецепты.
+  recipe({
+    name = "sap-venom-acid", categories = { "chemistry" }, energy_required = 3,
+    icons = tinted("__base__/graphics/icons/fluid/sulfuric-acid.png"),
+    ingredients = { { type = "item", name = "sap-venom-gland", amount = 2 }, { type = "fluid", name = "water", amount = 50 } },
+    results = { { type = "fluid", name = "sulfuric-acid", amount = 60 } },
+  }),
+  recipe({
+    name = "sap-venom-poison-capsule", energy_required = 8,
+    icons = tinted("__base__/graphics/icons/poison-capsule.png"),
+    ingredients = { { type = "item", name = "sap-venom-gland", amount = 3 }, { type = "item", name = "steel-plate", amount = 2 } },
+    results = { { type = "item", name = "poison-capsule", amount = 1 } },
+  }),
+  tech("sap-venom-processing", "__base__/graphics/icons/poison-capsule.png", { "sap-venom-acid", "sap-venom-poison-capsule" },
+       500, { "sap-planet-discovery-aquara" }),
+  -- Штормовой прогнозатор: предупреждение о буре за минуту (scripts/storm.lua).
+  {
+    type = "technology", name = "sap-storm-forecaster", icons = tinted("__base__/graphics/icons/radar.png"),
+    effects = {}, prerequisites = { "sap-storm-shield" },
+    unit = { count = 400, time = 60, ingredients = AQUARA_PACKS },
+  },
+})
+table.insert(data.raw.technology["sap-underwater-drill"].effects, { type = "unlock-recipe", recipe = "sap-underwater-ore" })
+-- Панцирная броня Aquara: водостойкая.
+sap.upgrade({
+  base = "modular-armor", name = "sap-carapace-armor", tint = TINT,
+  change = function(_, item)
+    item.resistances = { { type = "physical", decrease = 8, percent = 35 }, { type = "acid", decrease = 10, percent = 60 },
+                         { type = "poison", decrease = 10, percent = 60 } }
+  end,
+  ingredients = { { "modular-armor", 1 }, { "sap-carapace", 30 } },
+  tech = aquara_tech("sap-carapace-armor", "__base__/graphics/icons/modular-armor.png", 600),
+})

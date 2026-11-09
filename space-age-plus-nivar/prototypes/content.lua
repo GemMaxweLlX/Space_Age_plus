@@ -50,6 +50,7 @@ local lamp = entity_copy("lamp", "small-lamp", "sap-cryo-lamp", "__base__/graphi
 lamp.light = { intensity = 1, size = 60, color = { r = 0.8, g = 0.9, b = 1 } }
 lamp.light_when_colored = lamp.light
 lamp.always_on = true
+lamp.heating_energy = "0W" -- стабильное освещение при экстремальном холоде
 
 local heater = entity_copy("lamp", "small-lamp", "sap-cryo-heater", "__base__/graphics/icons/heat-pipe.png")
 heater.energy_usage_per_tick = "100kW"
@@ -165,4 +166,54 @@ data:extend({
   tech("sap-cryo-dome", "__base__/graphics/icons/radar.png", { "sap-cryo-dome" }, 1000, { "sap-planet-discovery-nivar" }),
   tech("sap-nivalite-wire", "__base__/graphics/icons/copper-cable.png", { "sap-nivalite-wire" }, 600,
        { "sap-planet-discovery-nivar" }),
+})
+
+-- Остальные технологии Nivar (docs: Техи планет → Nivar) ----------------------------------
+local function nivar_tech(name, icon, count, prerequisite)
+  return { name = name, icon = icon, count = count or 600,
+           prerequisites = { "sap-planet-discovery-nivar", prerequisite }, science = NIVAR_PACKS }
+end
+
+-- Криообогреватель Mk2: меньше потребление, больше радиус (scripts/cryostorm.lua).
+sap.upgrade({
+  base = "sap-cryo-heater", name = "sap-cryo-heater-mk2", tint = { r = 0.5, g = 0.7, b = 1, a = 1 },
+  change = function(e) e.energy_usage_per_tick = "70kW" end,
+  ingredients = { { "sap-cryo-heater", 2 }, { "sap-nivalite-wire", 10 } },
+  tech = nivar_tech("sap-cryo-heater-mk2", "__base__/graphics/icons/heat-pipe.png", 700),
+})
+-- Криопроводящие трубы и пещерный конвейер: не замерзают без обогрева.
+sap.upgrade({
+  base = "pipe", name = "sap-cryo-pipe", tint = TINT,
+  change = function(e) e.heating_energy = "0W" e.fast_replaceable_group = "pipe" end,
+  ingredients = { { "pipe", 1 }, { "sap-cryolite", 1 } }, time = 1,
+  tech = nivar_tech("sap-cryo-pipe", "__base__/graphics/icons/pipe.png", 400),
+})
+sap.upgrade({
+  base = "pipe-to-ground", name = "sap-cryo-pipe-to-ground", tint = TINT,
+  change = function(e) e.heating_energy = "0W" e.fast_replaceable_group = "pipe" end,
+  ingredients = { { "pipe-to-ground", 2 }, { "sap-cryolite", 4 } }, time = 2, result_count = 2,
+  tech = nivar_tech("sap-cryo-pipe", "__base__/graphics/icons/pipe.png", 400),
+})
+sap.upgrade({
+  base = "express-transport-belt", name = "sap-cave-belt", tint = TINT,
+  change = function(e) e.heating_energy = "0W" end,
+  ingredients = { { "express-transport-belt", 1 }, { "sap-cryolite", 1 } }, time = 1,
+  tech = nivar_tech("sap-cave-belt", "__base__/graphics/icons/express-transport-belt.png", 500),
+})
+-- Глубинный бур Mk2: быстрее, глубже.
+sap.upgrade({
+  base = "sap-deep-drill", name = "sap-deep-drill-mk2", tint = { r = 0.5, g = 0.7, b = 1, a = 1 },
+  change = function(e) e.crafting_speed = e.crafting_speed * 2 end,
+  ingredients = { { "sap-deep-drill", 1 }, { "sap-nivalite-wire", 20 }, { "sap-guardian-core", 1 } },
+  tech = nivar_tech("sap-deep-drill-mk2", "__base__/graphics/icons/electric-mining-drill.png", 1000, "sap-deep-drill"),
+})
+-- Криоброня: защита от атак Вьюги и ледяного дыхания.
+sap.upgrade({
+  base = "power-armor", name = "sap-cryo-armor", tint = TINT,
+  change = function(_, item)
+    item.resistances = { { type = "physical", decrease = 10, percent = 45 }, { type = "acid", decrease = 10, percent = 50 },
+                         { type = "explosion", decrease = 10, percent = 40 } }
+  end,
+  ingredients = { { "power-armor", 1 }, { "sap-cryo-carapace", 30 }, { "sap-nivalite-wire", 20 } },
+  tech = nivar_tech("sap-cryo-armor", "__base__/graphics/icons/power-armor.png", 800, "power-armor"),
 })

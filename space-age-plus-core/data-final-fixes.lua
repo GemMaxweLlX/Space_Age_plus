@@ -2,6 +2,11 @@
 local util = require("util")
 local sap = require("prototypes.api")
 
+-- Жидкости высокого класса открываются на Solaris, если модуль Solaris установлен.
+if data.raw.technology["sap-planet-discovery-solaris"] then
+  table.insert(data.raw.technology["sap-high-grade-fluids"].prerequisites, "sap-planet-discovery-solaris")
+end
+
 -- Ванильные планеты тоже открываются через спутники, если включена настройка.
 if settings.startup["sap-exploration-vanilla-planets"].value then
   for _, planet in pairs({ "vulcanus", "fulgora", "gleba", "aquilo" }) do

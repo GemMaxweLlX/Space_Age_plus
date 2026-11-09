@@ -8,8 +8,7 @@ local overheat = {}
 overheat.TICK_INTERVAL = 300 -- раз в 5 секунд
 
 local SURFACE = "solaris"
-local RADIATOR = "sap-radiator"
-local RADIATOR_RADIUS = 6
+local RADIATORS = { ["sap-radiator"] = 6, ["sap-radiator-mk2"] = 10 }
 local MACHINE_TYPES = { "assembling-machine", "furnace", "mining-drill", "lab" }
 local HEAT_UP = 1
 local COOL_DOWN = 3
@@ -46,10 +45,12 @@ function overheat.on_tick()
   local heat = state()
 
   local cooled = {}
-  for _, radiator in pairs(surface.find_entities_filtered({ name = RADIATOR })) do
+  local radiator_names = {}
+  for name in pairs(RADIATORS) do radiator_names[#radiator_names + 1] = name end
+  for _, radiator in pairs(surface.find_entities_filtered({ name = radiator_names })) do
     if radiator.is_connected_to_electric_network() then
       for _, machine in pairs(surface.find_entities_filtered({
-        type = MACHINE_TYPES, position = radiator.position, radius = RADIATOR_RADIUS,
+        type = MACHINE_TYPES, position = radiator.position, radius = RADIATORS[radiator.name],
       })) do
         cooled[machine.unit_number] = true
       end

@@ -49,7 +49,9 @@ end
 -- Генерация зон -----------------------------------------------------------------
 
 local function card_quality(distance)
-  local roll = math.random() + math.min(distance / 3000, 0.6)
+  local archive = game.forces.player.technologies["sap-archive-decipherer"]
+  local bonus = archive and archive.researched and 0.2 or 0
+  local roll = math.random() + math.min(distance / 3000, 0.6) + bonus
   return roll > 1.45 and "legendary" or roll > 1.3 and "epic" or roll > 1.1 and "rare"
     or roll > 0.85 and "uncommon" or "normal"
 end

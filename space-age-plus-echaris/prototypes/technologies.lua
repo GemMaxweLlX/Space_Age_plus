@@ -132,3 +132,139 @@ data:extend({
   tech("sap-em-turret", "__base__/graphics/icons/laser-turret.png", { "sap-em-turret" }, 1000, "laser-turret"),
   tech("sap-emp-grenade", "__base__/graphics/icons/grenade.png", { "sap-emp-grenade" }, 500, "military-2"),
 })
+
+-- Остальные технологии Echaris (docs: Техи планет → Echaris) ------------------------------
+local sap = require("__space-age-plus-core__.prototypes.api")
+
+local function echaris_tech(name, icon, count, prerequisites)
+  return { name = name, icon = icon, count = count or 800,
+           prerequisites = { "sap-planet-discovery-echaris", prerequisites }, science = ECHARIS_PACKS }
+end
+
+-- Улучшения Mk2
+sap.upgrade({
+  base = "centrifuge", name = "sap-centrifuge-mk2", tint = TINT,
+  change = function(e) e.crafting_speed = e.crafting_speed * 2 end,
+  ingredients = { { "centrifuge", 1 }, { "sap-mechanite-core", 2 }, { NIVALITE, 5 } },
+  tech = echaris_tech("sap-centrifuge-mk2", "__base__/graphics/icons/centrifuge.png", 800, "uranium-processing"),
+})
+sap.upgrade({
+  base = "electric-furnace", name = "sap-electric-furnace-mk2", tint = TINT,
+  change = function(e) e.crafting_speed = e.crafting_speed * 1.5 e.energy_usage = "126kW" end,
+  ingredients = { { "electric-furnace", 1 }, { "sap-mechanite-scrap", 5 }, { "supercapacitor", 2 } },
+  tech = echaris_tech("sap-electric-furnace-mk2", "__base__/graphics/icons/electric-furnace.png", 800, "advanced-material-processing-2"),
+})
+sap.upgrade({
+  base = "assembling-machine-3", name = "sap-assembling-machine-mk2plus", tint = TINT,
+  change = function(e) e.crafting_speed = 2.5 end,
+  ingredients = { { "assembling-machine-3", 1 }, { "sap-mechanite-core", 2 }, { "superconductor", 5 } },
+  tech = echaris_tech("sap-assembling-machine-mk2plus", "__base__/graphics/icons/assembling-machine-3.png", 1200, "automation-3"),
+})
+sap.upgrade({
+  base = "storage-tank", name = "sap-storage-tank-mk2", tint = TINT,
+  change = function(e) e.fluid_box.volume = e.fluid_box.volume * 2 end,
+  ingredients = { { "storage-tank", 1 }, { "sap-mechanite-scrap", 5 } },
+  tech = echaris_tech("sap-storage-tank-mk2", "__base__/graphics/icons/storage-tank.png", 500, "fluid-handling"),
+})
+sap.upgrade({
+  base = "radar", name = "sap-radar-mk2", tint = TINT,
+  change = function(e)
+    e.max_distance_of_sector_revealed = e.max_distance_of_sector_revealed * 2
+    e.max_distance_of_nearby_sector_revealed = e.max_distance_of_nearby_sector_revealed * 2
+  end,
+  ingredients = { { "radar", 1 }, { "sap-mechanite-core", 1 } },
+  tech = echaris_tech("sap-radar-mk2", "__base__/graphics/icons/radar.png", 500, "radar"),
+})
+sap.upgrade({
+  base = "roboport", name = "sap-roboport-mk2", tint = TINT,
+  change = function(e)
+    e.robot_slots_count = e.robot_slots_count * 2
+    e.charging_energy = "1MW"
+    e.charging_station_count = (e.charging_station_count or 4) * 2
+  end,
+  ingredients = { { "roboport", 1 }, { "sap-mechanite-core", 2 }, { NIVALITE, 5 } },
+  tech = echaris_tech("sap-roboport-mk2", "__base__/graphics/icons/roboport.png", 1000, "sap-echaris-robots-mk2"),
+})
+sap.upgrade({
+  base = "roboport", name = "sap-logistic-beacon-mk2", tint = { r = 0.6, g = 0.6, b = 1, a = 1 },
+  change = function(e) e.logistics_radius = e.logistics_radius * 2 e.construction_radius = e.construction_radius * 1.5 end,
+  ingredients = { { "roboport", 1 }, { "sap-mechanite-core", 3 }, { "processing-unit", 10 } },
+  tech = echaris_tech("sap-logistic-beacon-mk2", "__base__/graphics/icons/roboport.png", 1000, "sap-roboport-mk2"),
+})
+
+-- Новые технологии
+sap.upgrade({
+  base = "big-electric-pole", name = "sap-power-relay-tower", tint = TINT,
+  change = function(e) e.maximum_wire_distance = 64 e.supply_area_distance = 4 end,
+  ingredients = { { "big-electric-pole", 2 }, { NIVALITE, 4 }, { "sap-mechanite-scrap", 5 } },
+  tech = echaris_tech("sap-power-relay-tower", "__base__/graphics/icons/big-electric-pole.png", 800, "electric-energy-distribution-2"),
+})
+sap.upgrade({
+  base = "tesla-turret", name = "sap-echaris-discharger", tint = TINT,
+  change = function(e) e.attack_parameters.damage_modifier = (e.attack_parameters.damage_modifier or 1) * 1.5 end,
+  ingredients = { { "tesla-turret", 1 }, { "sap-mechanite-core", 3 } },
+  tech = echaris_tech("sap-echaris-discharger", "__space-age__/graphics/icons/tesla-turret.png", 1200, "tesla-weapons"),
+})
+sap.upgrade({
+  base = "tesla-turret", name = "sap-suppressor-turret", tint = { r = 0.5, g = 0.5, b = 1, a = 1 },
+  change = function(e) e.attack_parameters.range = e.attack_parameters.range + 8 end,
+  ingredients = { { "tesla-turret", 1 }, { "supercapacitor", 10 }, { "sap-mechanite-scrap", 10 } },
+  tech = echaris_tech("sap-suppressor-turret", "__space-age__/graphics/icons/tesla-turret.png", 1000, "tesla-weapons"),
+})
+sap.upgrade({
+  base = "rocket-turret", name = "sap-emp-flak-cannon", tint = TINT,
+  change = function(e)
+    e.attack_parameters.range = e.attack_parameters.range + 10
+    e.attack_parameters.damage_modifier = (e.attack_parameters.damage_modifier or 1) * 2
+  end,
+  ingredients = { { "rocket-turret", 1 }, { "sap-mechanite-core", 2 }, { "supercapacitor", 5 } },
+  tech = echaris_tech("sap-emp-flak-cannon", "__space-age__/graphics/icons/rocket-turret.png", 1000, "rocket-turret"),
+})
+sap.upgrade({
+  base = "submachine-gun", name = "sap-plasma-carbine", tint = TINT,
+  change = function(_, item) item.attack_parameters.damage_modifier = (item.attack_parameters.damage_modifier or 1) * 2.5 end,
+  ingredients = { { "submachine-gun", 1 }, { "supercapacitor", 5 }, { "sap-mechanite-core", 1 } },
+  tech = echaris_tech("sap-plasma-carbine", "__base__/graphics/icons/submachine-gun.png", 600, "military-3"),
+})
+sap.upgrade({
+  base = "power-armor-mk2", name = "sap-echaris-exoskeleton", tint = TINT,
+  change = function(_, item)
+    item.resistances = item.resistances or {}
+    table.insert(item.resistances, { type = "electric", decrease = 20, percent = 80 })
+  end,
+  ingredients = { { "power-armor-mk2", 1 }, { "sap-mechanite-core", 10 }, { NIVALITE, 20 } },
+  tech = echaris_tech("sap-echaris-exoskeleton", "__base__/graphics/icons/power-armor-mk2.png", 1500, "power-armor-mk2"),
+})
+
+-- Модульный реактор: компактный, без воды — ядерное топливо сразу в электричество.
+local reactor = util.table.deepcopy(data.raw["burner-generator"]["burner-generator"])
+reactor.name = "sap-modular-reactor"
+reactor.hidden = nil
+reactor.icon = nil
+reactor.icons = { { icon = "__base__/graphics/icons/nuclear-reactor.png", icon_size = 64, tint = TINT } }
+reactor.minable = { mining_time = 1, result = "sap-modular-reactor" }
+reactor.max_power_output = "30MW"
+reactor.burner.fuel_categories = { "nuclear" }
+reactor.burner.burnt_inventory_size = 1
+reactor.burner.effectivity = 0.5
+data:extend({
+  reactor,
+  {
+    type = "item", name = "sap-modular-reactor", icons = reactor.icons, subgroup = "energy",
+    order = "f[nuclear-energy]-z[sap-modular-reactor]", place_result = "sap-modular-reactor", stack_size = 10,
+  },
+  recipe("sap-modular-reactor", { { "steel-plate", 100 }, { "sap-mechanite-core", 10 }, { NIVALITE, 20 },
+                                  { "processing-unit", 20 } }),
+  tech("sap-modular-reactor", "__base__/graphics/icons/nuclear-reactor.png", { "sap-modular-reactor" }, 1500, "nuclear-power"),
+})
+
+-- Архивный дешифратор: выше шанс карт высокого качества в центрах Echaris (scripts/mechanites.lua).
+data:extend({
+  {
+    type = "technology", name = "sap-archive-decipherer",
+    icons = { { icon = "__base__/graphics/technology/research-speed.png", icon_size = 256, tint = TINT } },
+    effects = {},
+    prerequisites = { "sap-planet-discovery-echaris" },
+    unit = { count = 1000, time = 60, ingredients = ECHARIS_PACKS },
+  },
+})

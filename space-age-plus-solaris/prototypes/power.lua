@@ -92,3 +92,86 @@ data:extend({
     unit = { count = 2000, time = 60, ingredients = PACKS },
   },
 })
+
+-- Остальные технологии Solaris (docs: Техи планет → Solaris) -------------------------------
+local function solaris_tech(name, icon, count, prerequisite)
+  return { name = name, icon = icon, count = count or 600,
+           prerequisites = { "sap-planet-discovery-solaris", prerequisite }, science = PACKS }
+end
+
+local function fire_proof(e, percent)
+  e.resistances = e.resistances or {}
+  table.insert(e.resistances, { type = "fire", percent = percent })
+end
+
+-- Термит Mk2: улучшенное химсоединение, нужно для огнеупорных построек.
+data:extend({
+  {
+    type = "item", name = "sap-thermite-mk2",
+    icons = { { icon = "__base__/graphics/icons/explosives.png", icon_size = 64, tint = { r = 1, g = 0.4, b = 0.2, a = 1 } } },
+    subgroup = "vulcanus-processes", order = "z[sap]-b2", stack_size = 100,
+  },
+  {
+    type = "recipe", name = "sap-thermite-mk2", categories = { "chemistry" }, enabled = false, energy_required = 6,
+    ingredients = {
+      { type = "item", name = "sap-thermite", amount = 2 }, { type = "item", name = "sap-lava-clot", amount = 1 },
+      { type = "fluid", name = "sulfuric-acid", amount = 20 },
+    },
+    results = { { type = "item", name = "sap-thermite-mk2", amount = 2 } },
+  },
+  {
+    type = "technology", name = "sap-thermite-mk2",
+    icons = { { icon = "__base__/graphics/icons/explosives.png", icon_size = 64, tint = TINT } },
+    effects = { { type = "unlock-recipe", recipe = "sap-thermite-mk2" } },
+    prerequisites = { "sap-thermite" }, unit = { count = 600, time = 60, ingredients = PACKS },
+  },
+})
+
+-- Жаропрочный конвейер: 60/с (F2), не страдает от жары и холода.
+sap.upgrade({
+  base = "turbo-transport-belt", name = "sap-heat-resistant-belt", tint = TINT,
+  change = function(e) fire_proof(e, 100) e.max_health = e.max_health * 2 e.heating_energy = "0W" end,
+  ingredients = { { "turbo-transport-belt", 1 }, { "sap-heat-resistant-alloy", 1 } }, time = 1,
+  tech = solaris_tech("sap-heat-resistant-belt", "__space-age__/graphics/icons/turbo-transport-belt.png", 800, "turbo-transport-belt"),
+})
+-- Радиатор Mk2: больше мощность отвода тепла (больший радиус, scripts/overheat.lua).
+sap.upgrade({
+  base = "sap-radiator", name = "sap-radiator-mk2", tint = { r = 1, g = 0.5, b = 0.2, a = 1 },
+  change = function(e) e.energy_usage_per_tick = "120kW" end,
+  ingredients = { { "sap-radiator", 2 }, { "sap-heat-resistant-crystal", 4 } },
+  tech = solaris_tech("sap-radiator-mk2", "__base__/graphics/icons/heat-pipe.png", 600),
+})
+-- Термотрубки Mk2: выдерживают более высокие температуры.
+sap.upgrade({
+  base = "heat-pipe", name = "sap-heat-pipe-mk2", tint = TINT,
+  change = function(e) e.heat_buffer.max_temperature = 2000 e.heat_buffer.max_transfer = "2GW" end,
+  ingredients = { { "heat-pipe", 1 }, { "sap-heat-resistant-alloy", 2 } },
+  tech = solaris_tech("sap-heat-pipe-mk2", "__base__/graphics/icons/heat-pipe.png", 700, "nuclear-power"),
+})
+-- Термоэлектрический генератор: пассивная энергия от перепада температур.
+sap.upgrade({
+  base = "solar-panel", name = "sap-thermoelectric-generator", tint = { r = 1, g = 0.6, b = 0.3, a = 1 },
+  change = function(e) e.production = "150kW" end,
+  ingredients = { { "solar-panel", 1 }, { "sap-heat-resistant-crystal", 5 }, { "copper-cable", 10 } },
+  tech = solaris_tech("sap-thermoelectric-generator", "__base__/graphics/icons/solar-panel.png", 700, "solar-energy"),
+})
+-- Зонтик Mk2: перехватывает лучи на ещё большей площади.
+sap.upgrade({
+  base = "sap-coronal-umbrella", name = "sap-coronal-umbrella-mk2", tint = { r = 1, g = 0.5, b = 0.2, a = 1 },
+  change = function(e) e.range_elongation = 70 end,
+  ingredients = { { "sap-coronal-umbrella", 2 }, { "sap-heat-resistant-alloy", 10 } },
+  tech = solaris_tech("sap-coronal-umbrella-mk2", "__space-age__/graphics/icons/lightning-rod.png", 800, "sap-coronal-umbrella"),
+})
+-- Жаропрочная броня и огнеупорные стены.
+sap.upgrade({
+  base = "heavy-armor", name = "sap-heat-resistant-armor", tint = TINT,
+  change = function(_, armor) fire_proof(armor, 90) end,
+  ingredients = { { "heavy-armor", 1 }, { "sap-heat-scales", 20 }, { "sap-heat-resistant-alloy", 10 } },
+  tech = solaris_tech("sap-heat-resistant-armor", "__base__/graphics/icons/heavy-armor.png", 500),
+})
+sap.upgrade({
+  base = "stone-wall", name = "sap-fireproof-wall", tint = TINT,
+  change = function(e) fire_proof(e, 100) e.max_health = e.max_health * 3 end,
+  ingredients = { { "stone-wall", 1 }, { "sap-thermite-mk2", 1 } }, time = 1,
+  tech = solaris_tech("sap-fireproof-wall", "__base__/graphics/icons/wall.png", 500, "sap-thermite-mk2"),
+})

@@ -27,6 +27,14 @@ steps[10] = function()
     check("entity " .. name, prototypes.entity[name] ~= nil)
   end
   check("planet echaris", game.planets["echaris"] ~= nil)
+  check("tech: cryo pipe needs no heating", prototypes.entity["sap-cryo-pipe"].heating_energy == 0,
+        prototypes.entity["sap-cryo-pipe"].heating_energy)
+  check("tech: steam turbine mk2 condenses", prototypes.mod_data["sap-condensing-generators"].data["sap-steam-turbine-mk2"] == 0.9)
+  check("tech: mk2+ assembler faster than mk3",
+        prototypes.entity["sap-assembling-machine-mk2plus"].get_crafting_speed() > prototypes.entity["assembling-machine-3"].get_crafting_speed())
+  check("tech: water cistern recipe", prototypes.recipe["sap-water-cistern"] ~= nil)
+  check("tech: heavy-duty pump 2400/s", math.abs(prototypes.entity["sap-heavy-duty-pump"].get_pumping_speed() * 60 - 2400) < 1,
+        prototypes.entity["sap-heavy-duty-pump"].get_pumping_speed() * 60)
   local uses = {}
   for _, ingredient in pairs(prototypes.recipe["sap-logistic-robot-mk2"].ingredients) do uses[ingredient.name] = true end
   check("I1: echaris uses nivalite when nivar installed", uses["sap-nivalite"] == true)
