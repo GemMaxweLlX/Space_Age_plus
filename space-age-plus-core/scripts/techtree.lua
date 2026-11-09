@@ -13,6 +13,8 @@
 
 local techtree = {}
 
+local quality_bonus = require("scripts.quality_bonus")
+
 local DECIPHERER = "sap-decipherer"
 local LOGIC_LAB = "sap-logic-lab"
 local WRECK = "sap-data-wreck"
@@ -81,14 +83,23 @@ local function sync_force(force)
       tech.visible_when_disabled = false
     end
   end
+  quality_bonus.sync_force(force, unlocked)
 end
 
+local QUALITY_RANK = { normal = 1, uncommon = 2, rare = 3, epic = 4, legendary = 5 }
+
 local function unlock(force, name, quality)
-  unlocked_for(force)[name] = quality or "normal"
+  quality = quality or "normal"
+  local unlocked = unlocked_for(force)
+  if (QUALITY_RANK[quality] or 1) >= (QUALITY_RANK[unlocked[name]] or 0) then
+    unlocked[name] = quality
+  end
   local tech = force.technologies[name]
   if tech then
     tech.enabled = true
   end
+  -- Открыта редкая версия → открыты и необычная (обычная — сама технология).
+  quality_bonus.unlock_variants(force, name, unlocked[name])
 end
 
 -- Кандидаты ---------------------------------------------------------------------
@@ -413,6 +424,11 @@ function techtree.on_configuration_changed()
   state()
   if not enabled() then return end
   sync_all()
+end
+
+--- Для тестов и скриптов других модулей: открыть технологию как через дешифратор.
+function techtree.unlock(force, name, quality)
+  unlock(force, name, quality)
 end
 
 function techtree.on_force_created(event)

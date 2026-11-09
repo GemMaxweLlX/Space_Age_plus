@@ -1,4 +1,5 @@
 -- space-age-plus-core: финальные правки после всех модулей.
+local util = require("util")
 local sap = require("prototypes.api")
 
 -- Ванильные планеты тоже открываются через спутники, если включена настройка.
@@ -103,3 +104,62 @@ for name, tech in pairs(data.raw.technology) do
 end
 
 data:extend({ { type = "mod-data", name = "sap-tech-catalog", data = catalog } })
+
+-- Версии технологий по качеству (I3) ----------------------------------------------
+-- Только для скрытых технологий, которые открывают постройки: машины, печи, буры,
+-- лаборатории. Цена ×1.5 / ×2 / ×3 / ×5. Версии скрыты, их открывает дешифратор.
+
+local QUALITY_COST = { uncommon = 1.5, rare = 2, epic = 3, legendary = 5 }
+local BONUS_TYPES = { ["assembling-machine"] = true, furnace = true, ["mining-drill"] = true, lab = true }
+
+local function placed_entity(recipe_name)
+  local recipe = data.raw.recipe[recipe_name]
+  if not (recipe and recipe.results) then return nil end
+  for _, result in pairs(recipe.results) do
+    if result.type == "item" then
+      local item = data.raw.item[result.name]
+      local entity_name = item and item.place_result
+      if entity_name then
+        for type_name in pairs(BONUS_TYPES) do
+          if data.raw[type_name][entity_name] then return entity_name end
+        end
+      end
+    end
+  end
+  return nil
+end
+
+local quality_data = { buildings = {}, variants = {}, bases = {} }
+for name in pairs(catalog) do
+  local tech = data.raw.technology[name]
+  if tech and tech.unit and tech.unit.count and not tech.unit.count_formula then
+    local buildings = {}
+    for _, effect in pairs(tech.effects or {}) do
+      if effect.type == "unlock-recipe" then
+        local entity_name = placed_entity(effect.recipe)
+        if entity_name then buildings[#buildings + 1] = entity_name end
+      end
+    end
+    if #buildings > 0 then
+      quality_data.bases[name] = {}
+      for _, entity_name in pairs(buildings) do quality_data.buildings[entity_name] = name end
+      for quality, multiplier in pairs(QUALITY_COST) do
+        local variant = util.table.deepcopy(tech)
+        variant.name = name .. "-sap-" .. quality
+        variant.localised_name = { "sap-techtree.quality-tech", tech.localised_name or { "technology-name." .. name },
+                                   { "quality-name." .. quality } }
+        variant.localised_description = tech.localised_description or { "technology-description." .. name }
+        variant.unit.count = math.ceil(tech.unit.count * multiplier)
+        variant.enabled = false
+        variant.visible_when_disabled = false
+        variant.upgrade = false
+        variant.essential = false
+        data:extend({ variant })
+        quality_data.variants[variant.name] = { base = name, quality = quality }
+        quality_data.bases[name][quality] = variant.name
+      end
+    end
+  end
+end
+
+data:extend({ { type = "mod-data", name = "sap-quality-techs", data = quality_data } })

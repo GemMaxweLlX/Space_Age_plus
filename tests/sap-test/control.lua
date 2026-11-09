@@ -359,6 +359,55 @@ steps[4500] = function()
   check("nivar: nests placed", nests > 0, nests)
 end
 
+-- Тики 160+: бонусы технологий по качеству (I3) -------------------------------------
+steps[160] = function()
+  if not techtree_on() then return end
+  local force = game.forces.player
+  check("I3: variant exists", force.technologies["automation-2-sap-rare"] ~= nil)
+  remote.call("sap-core", "unlock_tech", "player", "automation-2", "rare")
+  check("I3: base unlocked", force.technologies["automation-2"].enabled)
+  check("I3: uncommon variant unlocked", force.technologies["automation-2-sap-uncommon"].enabled)
+  check("I3: rare variant unlocked", force.technologies["automation-2-sap-rare"].enabled)
+  check("I3: epic variant still hidden", not force.technologies["automation-2-sap-epic"].enabled)
+  check("I3: rare costs x2", force.technologies["automation-2-sap-rare"].research_unit_count
+        == 2 * force.technologies["automation-2"].research_unit_count,
+        force.technologies["automation-2-sap-rare"].research_unit_count)
+
+  local surface = game.surfaces.nauvis
+  local before_pos = surface.find_non_colliding_position("assembling-machine-2", { -20, 40 }, 40, 4)
+  storage.am_before = surface.create_entity({ name = "assembling-machine-2", position = before_pos, force = "player",
+                                              raise_built = true })
+  force.technologies["automation-2-sap-rare"].researched = true
+end
+
+steps[170] = function()
+  if not techtree_on() then return end
+  local force = game.forces.player
+  check("I3: researched quality recorded", remote.call("sap-core", "researched_quality", "player", "automation-2") == "rare",
+        remote.call("sap-core", "researched_quality", "player", "automation-2"))
+  check("I3: base researched", force.technologies["automation-2"].researched)
+  local surface = game.surfaces.nauvis
+  local pos = surface.find_non_colliding_position("assembling-machine-2", { 20, 40 }, 40, 4)
+  local machine = surface.create_entity({ name = "assembling-machine-2", position = pos, force = "player", raise_built = true })
+  machine.set_recipe("iron-gear-wheel")
+  storage.am_after = machine
+  local neighbour_pos = surface.find_non_colliding_position("assembling-machine-1", { pos.x + 3.5, pos.y }, 10, 0.5)
+  storage.am_neighbour = surface.create_entity({ name = "assembling-machine-1", position = neighbour_pos, force = "player",
+                                                 raise_built = true })
+end
+
+steps[180] = function()
+  if not techtree_on() then return end
+  local function fx(e) return e and e.valid and e.effects or {} end
+  local after, before, neighbour = fx(storage.am_after), fx(storage.am_before), fx(storage.am_neighbour)
+  log("SAP-TEST INFO bonus effects new=" .. serpent.line(after) .. " old=" .. serpent.line(before)
+      .. " neighbour=" .. serpent.line(neighbour))
+  check("I3: new building gets speed bonus", (after.speed or 0) > 0.09, serpent.line(after))
+  check("I3: new building gets efficiency bonus", (after.consumption or 0) < -0.09, serpent.line(after))
+  check("I3: existing building upgraded", (before.speed or 0) > 0.09, serpent.line(before))
+  check("I3: bonus does not leak to neighbour", (neighbour.speed or 0) == 0, serpent.line(neighbour))
+end
+
 -- Конец ---------------------------------------------------------------------------
 -- Мусор проверяем раньше: куски медленно пролетают мимо и улетают с карты.
 steps[2900] = function()
