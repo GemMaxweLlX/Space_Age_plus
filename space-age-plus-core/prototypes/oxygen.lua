@@ -220,6 +220,37 @@ data:extend({
   },
 })
 
+-- Кислородный баллон — модуль брони -------------------------------------------
+-- Ставится в сетку модульной брони. Без баллонов модульная броня даёт только
+-- экстренную систему (короткий запас), без модульной брони запаса воздуха нет.
+
+local tank = util.table.deepcopy(data.raw["battery-equipment"]["battery-equipment"])
+tank.name = "sap-oxygen-tank-equipment"
+tank.energy_source = { type = "electric", buffer_capacity = "1kJ", usage_priority = "tertiary" }
+tank.take_result = "sap-oxygen-tank-equipment"
+
+data:extend({
+  tank,
+  {
+    type = "item",
+    name = "sap-oxygen-tank-equipment",
+    icons = tinted_icon("__base__/graphics/icons/battery-equipment.png", OXYGEN_TINT),
+    place_as_equipment_result = "sap-oxygen-tank-equipment",
+    subgroup = "equipment",
+    order = "z[sap]-a[oxygen-tank]",
+    stack_size = 20,
+  },
+  {
+    type = "recipe", name = "sap-oxygen-tank-equipment", enabled = false, energy_required = 5,
+    ingredients = {
+      { type = "item", name = "steel-plate", amount = 10 },
+      { type = "item", name = "pipe", amount = 5 },
+      { type = "item", name = "advanced-circuit", amount = 2 },
+    },
+    results = { { type = "item", name = "sap-oxygen-tank-equipment", amount = 1 } },
+  },
+})
+
 -- Технология ------------------------------------------------------------------
 
 local function unlock(recipe) return { type = "unlock-recipe", recipe = recipe } end
@@ -231,6 +262,7 @@ data:extend({
     icons = tinted_icon("__base__/graphics/icons/fluid/steam.png", OXYGEN_TINT),
     prerequisites = { "space-platform" },
     effects = {
+      unlock("sap-oxygen-tank-equipment"),
       unlock("sap-oxygen-generator"),
       unlock("sap-oxygen-distributor"),
       unlock("sap-atmospheric-collector"),

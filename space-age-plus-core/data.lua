@@ -8,3 +8,4 @@ sap.register_oxygen_planet("gleba", { solution = "collector" })
 sap.register_oxygen_planet("aquilo", { solution = "collector" })
 
 require("prototypes.oxygen")
+require("prototypes.diary")
