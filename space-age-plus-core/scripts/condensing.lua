@@ -7,7 +7,7 @@ local condensing = {}
 condensing.TICK_INTERVAL = 60
 
 local ENERGY_PER_STEAM = (500 - 15) * 200
-local SEARCH_RADIUS = 4
+local SEARCH_RADIUS = 6 -- от центра; турбина 3×5, поэтому с запасом
 local TARGET_TYPES = { "pipe", "pipe-to-ground", "storage-tank" }
 
 local function generators()

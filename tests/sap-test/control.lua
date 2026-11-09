@@ -478,7 +478,44 @@ steps[810] = function()
         boiler and boiler.valid and (storage.sb_start .. " -> " .. boiler.temperature))
   local tank = storage.mt_tank
   local water = tank and tank.valid and tank.get_fluid_count("water") or 0
+  local turbine = storage.mt_turbine
+  if turbine and turbine.valid and tank and tank.valid then
+    log(string.format("SAP-TEST INFO turbine at %.1f,%.1f tank at %.1f,%.1f energy %.0f",
+      turbine.position.x, turbine.position.y, tank.position.x, tank.position.y, turbine.energy_generated_last_tick))
+  end
   check("solaris: mega turbine returns water", water > 0, water)
+end
+
+-- Тики 230+: мусор на орбите Echaris ------------------------------------------------
+steps[230] = function()
+  local force = game.forces.player
+  force.unlock_space_location("echaris")
+  local platform = force.create_space_platform({ name = "sap-test-echaris", planet = "echaris",
+                                                 starter_pack = "space-platform-starter-pack" })
+  if platform then platform.apply_starter_pack() end
+  storage.echaris_platform = platform
+  local extra = false
+  for _, product in pairs(prototypes.recipe["sap-debris-electrified-crushing"].products) do
+    if product.name == "sap-mechanite-scrap" then extra = true end
+  end
+  check("debris: electrified gives mechanite scrap with echaris installed", extra)
+end
+
+steps[240] = function()
+  local platform = storage.echaris_platform
+  if not (platform and platform.valid and platform.hub) then
+    check("debris: echaris platform", false, "no hub")
+    return
+  end
+  local hub = platform.hub.position
+  for i = 1, 60 do platform.eject_item({ name = "iron-plate" }, { hub.x + 3, hub.y + i % 5 }, { 0.1, 0 }) end
+end
+
+steps[2600] = function()
+  local platform = storage.echaris_platform
+  if not (platform and platform.valid) then return end
+  local flavored = #platform.find_asteroid_chunks_filtered({ name = "sap-debris-electrified" })
+  check("debris: echaris orbit gives electrified debris", flavored > 0, flavored)
 end
 
 -- Конец ---------------------------------------------------------------------------

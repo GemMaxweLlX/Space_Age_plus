@@ -22,6 +22,21 @@ local FALL_CHANCE_MAX = 0.5
 local FALL_RADIUS = 4
 local FALL_DAMAGE = 150
 
+-- Особый мусор у планет SA+: половина кусков в их окрестностях — «местного» вида.
+local FLAVOR = { echaris = "electrified", solaris = "heated", aquara = "biofilm", nivar = "frozen" }
+local FLAVOR_SHARE = 0.5
+
+local function flavor_of(key)
+  local orbit = string.match(key, "^orbit:(.+)$")
+  if orbit then return FLAVOR[orbit] end
+  local route = string.match(key, "^route:(.+)$")
+  local connection = route and prototypes.space_connection[route]
+  if connection then
+    return FLAVOR[connection.from.name] or FLAVOR[connection.to.name]
+  end
+  return nil
+end
+
 local ELECTRONIC_PATTERNS = {
   "circuit", "processing%-unit", "module", "cable", "battery", "capacitor",
   "superconductor", "radar", "roboport", "robot", "combinator",
@@ -102,7 +117,7 @@ local function pick_kind(c)
   return "metal"
 end
 
-local function spawn_chunk(platform, c)
+local function spawn_chunk(platform, c, key)
   if c.total <= 0 or math.random() >= SPAWN_CHANCE then return end
   local hub = platform.hub
   if not (hub and hub.valid) then return end
@@ -111,6 +126,8 @@ local function spawn_chunk(platform, c)
   c[kind] = c[kind] - 1
   c.total = c.total - 1
   local origin = hub.position
+  local flavor = flavor_of(key)
+  if flavor and math.random() < FLAVOR_SHARE then kind = flavor end
   platform.create_asteroid_chunks({
     {
       name = "sap-debris-" .. kind,
@@ -127,7 +144,7 @@ function debris.on_tick()
         local key, segment = location_of(platform)
         if key then
           record_ejected(platform, key, segment)
-          spawn_chunk(platform, cell(key, segment))
+          spawn_chunk(platform, cell(key, segment), key)
         end
       end
     end

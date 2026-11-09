@@ -25,6 +25,24 @@ local KINDS = {
   } },
 }
 
+-- Мусор на орбитах и маршрутах планет SA+ (docs: Мусор → По орбитам SA+).
+KINDS["electrified"] = { tint = { r = 0.6, g = 0.6, b = 1, a = 1 }, results = {
+  { type = "item", name = "copper-cable", amount = 6 },
+  { type = "item", name = "supercapacitor", amount = 1, independent_probability = 0.1 },
+} }
+KINDS["heated"] = { tint = { r = 1, g = 0.5, b = 0.2, a = 1 }, results = {
+  { type = "item", name = "iron-plate", amount = 3 },
+  { type = "item", name = "tungsten-plate", amount = 1, independent_probability = 0.2 },
+} }
+KINDS["biofilm"] = { tint = { r = 0.4, g = 0.9, b = 0.5, a = 1 }, results = {
+  { type = "item", name = "spoilage", amount = 3 },
+  { type = "item", name = "nutrients", amount = 2, independent_probability = 0.5 },
+} }
+KINDS["frozen"] = { tint = { r = 0.8, g = 0.95, b = 1, a = 1 }, results = {
+  { type = "item", name = "ice", amount = 4 },
+  { type = "item", name = "iron-plate", amount = 1 },
+} }
+
 local unlocks = {}
 
 for kind, def in pairs(KINDS) do
