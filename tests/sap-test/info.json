@@ -2,7 +2,7 @@
   "name": "sap-test",
   "version": "0.1.0",
   "title": "Space Age+ in-game tests",
-  "author": "GemMaxweLlX",
+  "author": "VoiderFox",
   "factorio_version": "2.1",
   "description": "Automated checks for Space Age+ modules, run with tools/run-tests.sh. Not for normal play.",
   "dependencies": [
