@@ -1,0 +1,14 @@
+{
+  "name": "space-age-plus-aquara",
+  "version": "0.1.0",
+  "title": "Space Age+ Aquara",
+  "author": "GemMaxweLlX",
+  "homepage": "https://github.com/GemMaxweLlX/Space_Age_plus",
+  "factorio_version": "2.1",
+  "description": "Aquara, moon of Gleba. Ocean world with islands, algae, tornado storms, aquatic pentapods.",
+  "dependencies": [
+    "base >= 2.1.0",
+    "space-age >= 2.1.0",
+    "space-age-plus-core >= 0.1.0"
+  ]
+}

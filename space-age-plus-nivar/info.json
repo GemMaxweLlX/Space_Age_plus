@@ -1,0 +1,14 @@
+{
+  "name": "space-age-plus-nivar",
+  "version": "0.1.0",
+  "title": "Space Age+ Nivar",
+  "author": "GemMaxweLlX",
+  "homepage": "https://github.com/GemMaxweLlX/Space_Age_plus",
+  "factorio_version": "2.1",
+  "description": "Nivar, moon of Aquilo. Ice desert, cryostorms, caves under the ice.",
+  "dependencies": [
+    "base >= 2.1.0",
+    "space-age >= 2.1.0",
+    "space-age-plus-core >= 0.1.0"
+  ]
+}
