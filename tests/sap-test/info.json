@@ -5,5 +5,10 @@
   "author": "GemMaxweLlX",
   "factorio_version": "2.1",
   "description": "Automated checks for Space Age+ modules, run with tools/run-tests.sh. Not for normal play.",
-  "dependencies": ["space-age-plus-core", "space-age-plus-echaris", "space-age-plus-debris"]
+  "dependencies": [
+    "space-age-plus-core",
+    "space-age-plus-echaris",
+    "space-age-plus-debris",
+    "space-age-plus-solaris"
+  ]
 }

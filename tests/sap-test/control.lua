@@ -220,6 +220,42 @@ steps[400] = function()
         mk2 and mk2.valid and mk2.health)
 end
 
+-- Тики 100+: Solaris -----------------------------------------------------------------
+steps[100] = function()
+  local surface = game.planets["solaris"].create_surface()
+  surface.request_to_generate_chunks({ 0, 0 }, 8)
+  surface.force_generate_chunk_requests()
+  check("solaris: map generated", surface.is_chunk_generated({ 2, 2 }))
+  check("solaris: long day", surface.dawn == 0.6, surface.dawn)
+  local ore = surface.count_entities_filtered({ name = "sap-magmatic-ore" })
+  local crystal = surface.count_entities_filtered({ name = "sap-heat-resistant-crystal" })
+  check("solaris: magmatic ore placed", ore > 0, ore)
+  check("solaris: crystals placed", crystal > 0, crystal)
+  check("solaris: no tungsten", surface.count_entities_filtered({ name = "tungsten-ore" }) == 0)
+
+  local hot_pos = surface.find_non_colliding_position("assembling-machine-2", { 10, 10 }, 40, 1)
+  storage.hot_machine = surface.create_entity({ name = "assembling-machine-2", position = hot_pos, force = "player" })
+  local cool_pos = surface.find_non_colliding_position("assembling-machine-2", { -30, 10 }, 40, 6)
+  storage.cool_machine = surface.create_entity({ name = "assembling-machine-2", position = cool_pos, force = "player" })
+  surface.create_entity({ name = "sap-radiator", position = { cool_pos.x + 2, cool_pos.y }, force = "player" })
+  surface.create_entity({ name = "electric-energy-interface", position = { cool_pos.x, cool_pos.y + 4 }, force = "player" })
+  surface.create_entity({ name = "substation", position = { cool_pos.x + 3, cool_pos.y + 3 }, force = "player" })
+end
+
+steps[200] = function()
+  local surface = game.surfaces["solaris"]
+  local nests = surface.count_entities_filtered({ name = { "sap-scorch-nest", "sap-magmar-nest" } })
+  check("solaris: nests placed", nests > 0, nests)
+end
+
+steps[5000] = function()
+  local hot, cool = storage.hot_machine, storage.cool_machine
+  check("solaris: unprotected machine overheats", hot and hot.valid and hot.disabled_by_script,
+        hot and hot.valid and tostring(hot.disabled_by_script))
+  check("solaris: radiator protects machine", cool and cool.valid and not cool.disabled_by_script,
+        cool and cool.valid and tostring(cool.disabled_by_script))
+end
+
 -- Конец ---------------------------------------------------------------------------
 -- Мусор проверяем раньше: куски медленно пролетают мимо и улетают с карты.
 steps[2900] = function()

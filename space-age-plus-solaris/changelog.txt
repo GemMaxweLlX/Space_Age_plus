@@ -2,4 +2,8 @@
 Version: 0.1.0
 Date: 2026-11-09
   Major Features:
-    - Initial module skeleton.
+    - Solaris planet near the Sun: lava terrain without demolishers, 80% daylight, no pollution.
+    - Magmatic ore and heat-resistant crystals; heat-resistant alloy and thermite.
+    - Coronal mass ejections (1-5 rays), protective umbrella and ray catcher.
+    - Machine overheating with cooling radiators.
+    - Scorch and Magmar nests, solitary Molten; aggressive creatures hardcore setting.
