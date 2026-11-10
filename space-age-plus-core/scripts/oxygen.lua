@@ -9,6 +9,8 @@
 -- Пустой запас → здоровье падает, в чат пишется "Неисправная система жизнеобеспечения".
 -- У каждого игрока своя система (G1). Скорость смерти и объём баллона — настройки (G2).
 
+local sap_settings = require("sap_settings")
+
 local oxygen = {}
 
 oxygen.TICK_INTERVAL = 60 -- раз в секунду
@@ -51,14 +53,14 @@ end
 local function capacity_of(character)
   local grid = armor_grid(character)
   if not grid then return 0, 0 end
-  local per_tank = TANK_SECONDS[settings.global["sap-oxygen-tank-size"].value] or TANK_SECONDS.medium
+  local per_tank = TANK_SECONDS[sap_settings.get("sap-oxygen-tank-size")] or TANK_SECONDS.medium
   return EMERGENCY_SECONDS + grid.count(TANK_EQUIPMENT) * per_tank, EMERGENCY_SECONDS
 end
 
 local function damage_per_second(character)
-  local fraction = DAMAGE_FRACTION[settings.global["sap-oxygen-death-speed"].value]
+  local fraction = DAMAGE_FRACTION[sap_settings.get("sap-oxygen-death-speed")]
     or DAMAGE_FRACTION.medium
-  if settings.global["sap-hardcore-strict-oxygen"].value then
+  if sap_settings.get("sap-hardcore-strict-oxygen") then
     fraction = fraction * STRICT_MULTIPLIER
   end
   return character.max_health * fraction

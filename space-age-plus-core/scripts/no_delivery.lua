@@ -2,6 +2,8 @@
 -- Грузовая капсула, которая улетает с платформы на планету с включённой настройкой,
 -- разворачивается обратно в хаб своей платформы. Капсулы с игроком не трогаем.
 
+local sap_settings = require("sap_settings")
+
 local no_delivery = {}
 
 local function rules()
@@ -18,7 +20,7 @@ local function forbidden(surface_name, force)
     if tech and tech.researched then return false end
   end
   if rule.setting then
-    return settings.startup[rule.setting] and settings.startup[rule.setting].value == true
+    return sap_settings.get(rule.setting) == true
   end
   return true
 end

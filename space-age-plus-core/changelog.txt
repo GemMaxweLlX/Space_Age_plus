@@ -9,3 +9,5 @@ Date: 2026-11-09
     - Engineer's diary (J): background choice, 72 entries from the design document triggered by game events, company logs in wrecks.
     - Ancient vaults with alien data cards and encrypted data; three alien technologies; decryption in the decipherer.
     - Diary entries for vaults and decryption, autonomous base, production deadlock, asteroid hits, first delivery, first Nauvis capture.
+    - Tips and tricks section "Space Age+" explaining every mechanic; planet briefings unlock with their discovery.
+    - Settings preset: Custom / Casual / Standard / Hardcore.

@@ -1,6 +1,10 @@
 -- Настройки ядра Space Age+ (docs: Глобальные механики → Кислород, Хардкор).
 -- Каждая хардкор-опция включается отдельно, общей кнопки нет.
 data:extend({
+  -- Набор: «Свой» — действуют отдельные настройки ниже; остальные наборы подменяют их.
+  { type = "string-setting", name = "sap-preset", setting_type = "startup",
+    default_value = "custom", allowed_values = { "custom", "casual", "standard", "hardcore" }, order = "0" },
+
   -- Кислород
   { type = "bool-setting", name = "sap-oxygen-enabled", setting_type = "runtime-global",
     default_value = true, order = "a-a" },

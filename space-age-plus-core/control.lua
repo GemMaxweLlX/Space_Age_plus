@@ -96,7 +96,9 @@ remote.add_interface("sap-diary", {
 })
 
 -- Для автотестов.
+local sap_settings = require("sap_settings")
 remote.add_interface("sap-core", {
+  get_setting = function(name) return sap_settings.get(name) end,
   -- Тесты с игроком: «нажатие» на элемент окна и на клавишу дневника (те же обработчики).
   test_click = function(player_index, element)
     local event = { element = element, player_index = player_index, name = defines.events.on_gui_click }

@@ -9,6 +9,8 @@
 -- Disruptor: ЭМИ — рядом с ним турели игрока отключаются, дроны разряжаются.
 -- Хардкор «Волны по таймеру»: Механиты атакуют по расписанию.
 
+local sap_settings = require("__space-age-plus-core__.sap_settings")
+
 local mechanites = {}
 
 local function diary_add(force, key)
@@ -47,7 +49,7 @@ local function state()
 end
 
 local function hardcore(name)
-  return settings.startup[name].value
+  return sap_settings.get(name)
 end
 
 -- Генерация зон -----------------------------------------------------------------

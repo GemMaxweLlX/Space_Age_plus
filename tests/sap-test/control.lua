@@ -13,7 +13,7 @@ local function check(name, ok, details)
 end
 
 local function techtree_on()
-  return settings.startup["sap-techtree-enabled"].value
+  return remote.call("sap-core", "get_setting", "sap-techtree-enabled")
 end
 
 -- Шаги по тикам. Несколько шагов на один тик выполняются по порядку (не заменяют друг друга).
@@ -60,7 +60,7 @@ steps[10] = function()
     local wrecks = game.surfaces.nauvis.count_entities_filtered({ name = "sap-starting-wreck" })
     check("techtree: starting wreck placed", wrecks == 1, wrecks)
   end
-  if settings.startup["sap-exploration-vanilla-planets"].value then
+  if remote.call("sap-core", "get_setting", "sap-exploration-vanilla-planets") then
     check("exploration: vulcanus discovery hidden", not force.technologies["planet-discovery-vulcanus"].enabled)
   end
 end
@@ -788,8 +788,10 @@ steps[7400] = function()
       end
     end
   end
-  check("alien: vaults generated", vaults > 0, vaults)
-  check("alien: vaults hold alien card and data", vaults > 0 and with_loot == vaults, with_loot .. "/" .. vaults)
+  -- Хранилища появляются только со скрытым деревом (их карты открывают скрытые технологии).
+  check("alien: vaults generated", not techtree_on() or vaults > 0, vaults)
+  check("alien: vaults hold alien card and data", vaults == 0 and not techtree_on() or vaults > 0 and with_loot == vaults,
+        with_loot .. "/" .. vaults)
   check("alien: alien techs in alien category",
         prototypes.mod_data["sap-tech-catalog"].data["sap-alien-geometry"].category == "alien")
 
@@ -886,7 +888,13 @@ steps[8800] = function()
   check("decipher: packs spent", dinv.get_item_count("automation-science-pack") == 0)
 
   local llk, linv = machine("sap-logic-lab", { -70, -60 })
+  local llk_off = remote.call("sap-core", "get_setting", "sap-hardcore-decipher-only")
   local llk_result = remote.call("sap-core", "decipher", "player", llk, 1, 0)
+  if llk_off then
+    check("llk: disabled by decipher-only hardcore", llk_result.message == "sap-techtree.llk-disabled",
+          serpent.line(llk_result))
+    return
+  end
   log("SAP-TEST INFO llk options " .. serpent.line(llk_result))
   check("llk: success offers up to two", llk_result.names and #llk_result.names >= 1 and #llk_result.names <= 2,
         serpent.line(llk_result))
@@ -908,7 +916,7 @@ steps[5] = function()
   local stuck_without = progression.audit(game.forces.player, { logistics = true })
   log("SAP-TEST INFO progression without logistics cards: " .. #stuck_without .. " unreachable, e.g. "
       .. table.concat({ table.unpack(stuck_without, 1, math.min(5, #stuck_without)) }, ", "))
-  check("progression: audit detects a missing card category", #stuck_without > 0, #stuck_without)
+  check("progression: audit detects a missing card category", not techtree_on() or #stuck_without > 0, #stuck_without)
 end
 
 -- Тики 9000+: замер производительности на большой базе -----------------------------------
@@ -1020,6 +1028,26 @@ steps[9500] = function()
   check("nivar: needs Aquilo lithium (N4)", lithium)
 end
 
+-- Тик 15: набор настроек (PRESET=... в tools/run-tests.sh) ------------------------------------
+steps[15] = function()
+  local preset = settings.startup["sap-preset"].value
+  local get = function(name) return remote.call("sap-core", "get_setting", name) end
+  log("SAP-TEST INFO preset " .. preset)
+  if preset == "casual" then
+    check("preset casual: tree not hidden", get("sap-techtree-enabled") == false
+          and game.forces.player.technologies["logistics-2"].enabled)
+    check("preset casual: vanilla planets without satellites", game.forces.player.technologies["planet-discovery-vulcanus"].enabled)
+    check("preset casual: slow suffocation, large tanks",
+          get("sap-oxygen-death-speed") == "slow" and get("sap-oxygen-tank-size") == "large")
+  elseif preset == "hardcore" then
+    check("preset hardcore: tree hidden", not game.forces.player.technologies["logistics-2"].enabled)
+    check("preset hardcore: every hardcore option on", get("sap-hardcore-strict-oxygen") and get("sap-hardcore-satellite")
+          and get("sap-hardcore-echaris-timed-waves") and get("sap-hardcore-nivar-no-delivery"))
+    check("preset hardcore: fast suffocation, small tanks",
+          get("sap-oxygen-death-speed") == "fast" and get("sap-oxygen-tank-size") == "small")
+  end
+end
+
 -- Конец ---------------------------------------------------------------------------
 -- Мусор проверяем раньше: куски медленно пролетают мимо и улетают с карты.
 steps[2900] = function()
@@ -1043,7 +1071,9 @@ steps[29000] = function()
 
 
   check("satellites: all launched", storage.launched == MK1_LAUNCHES + 1, storage.launched)
-  check("satellites: mk2 tech enabled after 10", force.technologies["sap-satellite-mk2"].enabled)
+  local hard_sat = remote.call("sap-core", "get_setting", "sap-hardcore-satellite")
+  check("satellites: mk2 tech enabled after 10 (hardcore: not yet)",
+        force.technologies["sap-satellite-mk2"].enabled ~= (hard_sat == true))
   local found, scouted = discovery_states()
   check("satellites: mk1 found something", found >= 1, found)
   check("satellites: mk2 scouted one", scouted == 1, scouted)
@@ -1051,8 +1081,10 @@ steps[29000] = function()
   local entries = {}
   for _, key in pairs(remote.call("sap-diary", "entries", "player")) do entries[key] = true end
   log("SAP-TEST INFO diary entries: " .. serpent.line(remote.call("sap-diary", "entries", "player")))
-  for _, key in pairs({ "sat-first", "sat-five-lost", "sat-mk2-ready", "emp-disruptor", "reinforcements", "capture-sa",
-                        "jettisoned-card", "kill-scorch-1" }) do
+  local expected = { "sat-first", "sat-five-lost", "emp-disruptor", "reinforcements", "capture-sa", "jettisoned-card",
+                     "kill-scorch-1" }
+  if not remote.call("sap-core", "get_setting", "sap-hardcore-satellite") then expected[#expected + 1] = "sat-mk2-ready" end
+  for _, key in pairs(expected) do
     check("diary: entry " .. key, entries[key] == true)
   end
 

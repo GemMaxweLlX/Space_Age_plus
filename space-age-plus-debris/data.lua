@@ -105,3 +105,7 @@ data:extend({
     },
   },
 })
+
+-- Подсказки (окно «Советы и подсказки», раздел Space Age+).
+local sap = require("__space-age-plus-core__.prototypes.api")
+sap.tip("sap-debris", "m", "[item=sap-debris-metal]", { type = "research", technology = "space-platform" })

@@ -11,3 +11,7 @@ require("prototypes.creatures")
 
 -- Хардкор «Без доставки с платформы».
 sap.register_no_delivery("nivar", "sap-hardcore-nivar-no-delivery")
+
+-- Подсказки (окно «Советы и подсказки», раздел Space Age+).
+sap.tip("sap-nivar-briefing", "v-a", "[planet=nivar]", { type = "research", technology = "sap-planet-discovery-nivar" })
+sap.tip("sap-nivar-caves", "v-b", "[item=sap-nivar-elevator]", { type = "change-surface", surface = "nivar" })

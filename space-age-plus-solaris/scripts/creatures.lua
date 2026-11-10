@@ -2,6 +2,8 @@
 -- Расставляются при генерации карты (через очередь — соседние участки ещё не готовы).
 -- Хардкор «агрессивные мобы»: существа регулярно атакуют постройки.
 
+local sap_settings = require("__space-age-plus-core__.sap_settings")
+
 local creatures = {}
 
 creatures.TICK_INTERVAL = 121
@@ -67,7 +69,7 @@ function creatures.on_tick()
 end
 
 function creatures.on_attack_tick()
-  if not settings.startup["sap-hardcore-solaris-aggressive"].value then return end
+  if not sap_settings.get("sap-hardcore-solaris-aggressive") then return end
   local surface = game.get_surface(SURFACE)
   if not surface then return end
   local nests = surface.find_entities_filtered({ name = { "sap-scorch-nest", "sap-magmar-nest" } })

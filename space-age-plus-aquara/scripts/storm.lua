@@ -7,6 +7,8 @@
 -- рядом с торнадо получают урон, если не стоят под работающим штормовым щитом. Штормовой
 -- якорь притягивает торнадо: дойдя до якоря, торнадо рассеивается и заряжает его.
 
+local sap_settings = require("__space-age-plus-core__.sap_settings")
+
 local storm = {}
 
 storm.TICK_INTERVAL = 60
@@ -34,7 +36,7 @@ local function state()
 end
 
 local function permanent()
-  return settings.startup["sap-hardcore-aquara-permanent-storm"].value
+  return sap_settings.get("sap-hardcore-aquara-permanent-storm")
 end
 
 local function apply_level(surface, level)

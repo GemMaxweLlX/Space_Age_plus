@@ -9,6 +9,7 @@
 #     migration — карта создаётся без модов Space Age+, затем моды добавляются
 #                 (проверка on_configuration_changed — как у игрока с существующим сохранением);
 #     player    — игра с настоящим игроком без экрана (--test-save): окна, кислород, лифт.
+#   PRESET: casual | standard | hardcore — проверить набор настроек (по умолчанию «Свой»).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 : "${FACTORIO:?Укажите FACTORIO=/путь/к/папке/factorio}"
@@ -18,6 +19,16 @@ LOG="$FACTORIO/factorio-current.log"
 SAVE="$FACTORIO/sap-test.zip"
 
 tools/package.sh >/dev/null
+# PRESET=casual|standard|hardcore — собрать ядро с другим набором настроек по умолчанию.
+if [ -n "${PRESET:-}" ]; then
+  ptmp=$(mktemp -d)
+  core=$(ls dist/space-age-plus-core_*.zip)
+  (cd "$ptmp" && unzip -q "$OLDPWD/$core")
+  sed -i "s/default_value = \"custom\"/default_value = \"$PRESET\"/" "$ptmp"/space-age-plus-core_*/settings.lua
+  rm "$core"
+  (cd "$ptmp" && zip -qr "$OLDPWD/$core" space-age-plus-core_*)
+  rm -rf "$ptmp"
+fi
 mkdir -p "$FACTORIO/mods" "$FACTORIO/mods-off"
 rm -f "$FACTORIO/mods/mod-settings.dat" "$FACTORIO"/mods/space-age-plus-*.zip "$FACTORIO"/mods/sap-test_*.zip "$SAVE"
 rm -f "$FACTORIO"/mods-off/*.zip "$FACTORIO"/saves/_autosave-sap-saveload.zip

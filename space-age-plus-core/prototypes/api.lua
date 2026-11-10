@@ -213,6 +213,20 @@ function api.register_no_delivery(planet, setting, unless_tech)
   proto.data[planet] = { setting = setting, unless_tech = unless_tech }
 end
 
+--- Подсказка в окне «Советы и подсказки» (раздел Space Age+).
+--- @param name string имя подсказки (текст: [tips-and-tricks-item-name]/[...-description])
+--- @param order string порядок в разделе
+--- @param tag string rich text иконки, например "[planet=solaris]"
+--- @param trigger table|nil когда подсказка откроется (nil — сразу)
+function api.tip(name, order, tag, trigger)
+  data:extend({
+    {
+      type = "tips-and-tricks-item", name = name, category = "space-age-plus", order = order, indent = 1,
+      tag = tag, trigger = trigger, starting_status = trigger == nil and "unlocked" or nil,
+    },
+  })
+end
+
 api.CAPTURABLE = "sap-capturable-nests"
 
 --- Захват ульев SA+ (docs: Глобальные механики → Захват ульев SA+).

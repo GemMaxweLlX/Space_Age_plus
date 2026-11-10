@@ -11,6 +11,8 @@
 -- Обломки с картами появляются на планетах при генерации карты. Стартовый обломок рядом
 --   с точкой высадки на Наувисе открывает «Военную промышленность 1».
 
+local sap_settings = require("sap_settings")
+
 local techtree = {}
 
 local quality_bonus = require("scripts.quality_bonus")
@@ -48,7 +50,7 @@ local FRAME_CHOICE = "sap_techtree_choice"
 -- Данные ------------------------------------------------------------------------
 
 local function enabled()
-  return settings.startup["sap-techtree-enabled"].value
+  return sap_settings.get("sap-techtree-enabled")
 end
 
 local function catalog()
@@ -291,7 +293,7 @@ local function decipher_step(force, entity)
 end
 
 local function logic_lab_step(force, entity, roll)
-  if settings.startup["sap-hardcore-decipher-only"].value then return { message = { "sap-techtree.llk-disabled" } } end
+  if sap_settings.get("sap-hardcore-decipher-only") then return { message = { "sap-techtree.llk-disabled" } } end
   local inventory = inventory_of(entity)
   local packs = available_packs(inventory)
   if next(packs) == nil then return { message = { "sap-techtree.no-packs", PACKS_PER_USE } } end

@@ -25,3 +25,7 @@ data:extend({
     },
   },
 })
+
+-- Подсказки (окно «Советы и подсказки», раздел Space Age+).
+sap.tip("sap-solaris-briefing", "s-a", "[planet=solaris]", { type = "research", technology = "sap-planet-discovery-solaris" })
+sap.tip("sap-solaris-heat", "s-b", "[item=sap-radiator]", { type = "change-surface", surface = "solaris" })

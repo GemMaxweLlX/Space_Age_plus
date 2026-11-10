@@ -1,4 +1,6 @@
 -- space-age-plus-core: финальные правки после всех модулей.
+
+local sap_settings = require("sap_settings")
 local util = require("util")
 local sap = require("prototypes.api")
 
@@ -8,7 +10,7 @@ if data.raw.technology["sap-planet-discovery-solaris"] then
 end
 
 -- Ванильные планеты тоже открываются через спутники, если включена настройка.
-if settings.startup["sap-exploration-vanilla-planets"].value then
+if sap_settings.get("sap-exploration-vanilla-planets") then
   for _, planet in pairs({ "vulcanus", "fulgora", "gleba", "aquilo" }) do
     if data.raw.technology["planet-discovery-" .. planet] then
       sap.register_explorable_planet(planet, { discovery_tech = "planet-discovery-" .. planet })
@@ -91,7 +93,7 @@ local function ingredient_names(tech)
 end
 
 local catalog = {}
-local techtree_enabled = settings.startup["sap-techtree-enabled"].value
+local techtree_enabled = sap_settings.get("sap-techtree-enabled")
 for name, tech in pairs(data.raw.technology) do
   if tech.unit and not NEVER_HIDDEN[name] then
     local packs = ingredient_names(tech)

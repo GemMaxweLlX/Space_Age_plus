@@ -7,6 +7,8 @@
 -- Технология спутника 1 открывается, когда на Наувисе построен телескоп.
 -- Технология спутника 2 — после 10 запусков спутника 1 (хардкор: 30-50).
 
+local sap_settings = require("sap_settings")
+
 local exploration = {}
 
 local diary = require("scripts.diary")
@@ -21,7 +23,7 @@ local LAUNCHES_NORMAL = 10
 local LAUNCHES_HARDCORE_MIN, LAUNCHES_HARDCORE_MAX = 30, 50
 
 local function hardcore()
-  return settings.startup["sap-hardcore-satellite"].value
+  return sap_settings.get("sap-hardcore-satellite")
 end
 
 local function explorable()
