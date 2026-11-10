@@ -674,6 +674,7 @@ function dungeon.enter(player, entrance)
   player.teleport(position, surface)
   player.print({ "sap-dungeon.entered" })
   diary.add(player.force, "story-dungeon")
+  notify("enter", planet, nil, player)
 end
 
 function dungeon.leave(player)

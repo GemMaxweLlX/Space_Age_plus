@@ -16,6 +16,7 @@
 local diary = require("scripts.diary")
 local dungeon = require("scripts.dungeon")
 local cores = require("scripts.cores")
+local achievements = require("scripts.achievements")
 
 local story = {}
 
@@ -93,6 +94,7 @@ function story.on_core_taken(force, planet)
   local n = 0
   for _ in pairs(taken) do n = n + 1 end
   if n >= 3 then diary.add(force, "story-pattern") end
+  achievements.on_core_taken(force, taken)
 end
 
 function story.on_built(entity)
@@ -229,6 +231,7 @@ function story.choose(force, ending)
   table.insert(fs.chosen, ending)
   EFFECTS[ending](force)
   diary.add(force, "story-ending-" .. ending)
+  achievements.on_ending(force, ending, fs.chosen)
   say(force, { "sap-story.chosen", { "sap-story.ending-" .. ending } })
   if ending == "unity" then
     fs.stage = "done"
@@ -247,6 +250,7 @@ function story.decide(force, decision)
   if decision == "return" then
     fs.stage = "done"
     diary.add(force, "story-return")
+    achievements.on_ending(force, "return", fs.chosen)
     say(force, { "sap-story.returned" })
     company_reward(force)
     victory(force)

@@ -282,22 +282,58 @@ function player_tests.register(steps, check, finish)
           and frame.seal.enabled and frame.unity == nil)
   end
 
+  local function achieved(name) return remote.call("sap-core", "achievement_unlocked", player().index, name) end
+
+  -- Достижения подземелья: вход, Смотритель без урона.
+  steps[1220] = function()
+    local p = player()
+    check("player achievement: first dungeon", achieved("sap-first-dungeon"))
+    check("player achievement: ending (awakening)", achieved("sap-ending-restore"))
+    p.character.health = p.character.max_health
+    remote.call("sap-core", "dungeon_enter", p.index, storage.pt_entrance)
+    local rec = remote.call("sap-core", "dungeon_record", "nauvis")
+    if rec.boss and rec.boss.valid then rec.boss.die() end
+  end
+
+  steps[1295] = function()
+    check("player achievement: Warden slayer", achieved("sap-warden-slayer"))
+    check("player achievement: flawless", achieved("sap-flawless"))
+  end
+
   -- Смерть в подземелье (последней: дальше персонажа нет).
-  steps[1260] = function()
+  steps[1300] = function()
     local p = player()
     local entrance = storage.pt_entrance
     if entrance and entrance.valid then remote.call("sap-core", "dungeon_enter", p.index, entrance) end
     if p.character then p.character.die() end
   end
 
-  steps[1280] = function()
+  steps[1320] = function()
     local p = player()
     local entries = {}
     for _, k in pairs(remote.call("sap-diary", "entries", p.force.name)) do entries[k] = true end
     check("player diary: death in a dungeon", entries["dungeon-death"] == true)
   end
 
-  steps[1300] = function() finish() end
+  -- Все ядра и все концовки (после смерти персонаж не нужен).
+  steps[1330] = function()
+    local p = player()
+    for planet in pairs(prototypes.mod_data["sap-ancient-cores"].data) do
+      remote.call("sap-core", "test_core_taken", p.force.name, planet)
+    end
+    check("player achievement: all cores", achieved("sap-all-cores"))
+    local force = p.force.name
+    -- Пробуждение уже выбрано и «остаться»; дальше Наследие, Печать, Единство.
+    for _, ending in pairs({ "inherit", "seal", "unity" }) do
+      remote.call("sap-core", "test_story_recharge", force)
+      remote.call("sap-core", "story_choose", force, ending)
+      if ending ~= "unity" then remote.call("sap-core", "story_decide", force, "stay") end
+    end
+    check("player achievement: unity", achieved("sap-ending-unity"))
+    check("player achievement: all endings", achieved("sap-all-endings"))
+  end
+
+  steps[1360] = function() finish() end
 end
 
 return player_tests

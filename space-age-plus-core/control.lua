@@ -11,6 +11,8 @@ local dungeon = require("scripts.dungeon")
 local story = require("scripts.story")
 local cores = require("scripts.cores")
 local events = require("scripts.events")
+local achievements = require("scripts.achievements")
+table.insert(events.listeners, achievements.on_event)
 dungeon.on_event = events.handle
 cores.on_bonus = function(force, planet) events.handle("pedestal", force, planet) end
 dungeon.on_core_taken = story.on_core_taken
@@ -95,7 +97,10 @@ script.on_event(defines.events.on_entity_died, function(event)
 end)
 
 -- Дневник: остальные события
-script.on_event(defines.events.on_entity_damaged, diary.on_entity_damaged, { { filter = "type", type = "character" } })
+script.on_event(defines.events.on_entity_damaged, function(event)
+  diary.on_entity_damaged(event)
+  achievements.on_entity_damaged(event)
+end, { { filter = "type", type = "character" } })
 script.on_event(defines.events.on_player_crafted_item, diary.on_player_crafted_item)
 script.on_event(defines.events.on_player_mined_item, diary.on_player_mined_item)
 script.on_event(defines.events.on_rocket_launched, diary.on_rocket_launched)
@@ -179,6 +184,13 @@ remote.add_interface("sap-core", {
     end
     return result
   end,
+  achievement_unlocked = function(player_index, name) return achievements.has(player_index, name) end,
+  achievement_unlocked_force = function(force_name, name)
+    for _, player in pairs(game.forces[force_name].players) do
+      if achievements.has(player.index, name) then return true end
+    end
+    return false
+  end,
   cores_applied = function(force_name) return cores.applied(game.forces[force_name]) end,
   cores_item = function(planet) return cores.item_of(planet) end,
   story_choose = function(force_name, ending) return story.choose(game.forces[force_name], ending) end,
@@ -186,6 +198,7 @@ remote.add_interface("sap-core", {
   story_decide = function(force_name, decision) return story.decide(game.forces[force_name], decision) end,
   story_stage = function(force_name) return story.stage_of(game.forces[force_name]) end,
   story_available = function(force_name) return story.available(game.forces[force_name]) end,
+  test_core_taken = function(force_name, planet) story.on_core_taken(game.forces[force_name], planet) end,
   test_story_gift = function(force_name) story.gift(game.forces[force_name]) end,
   test_story_recharge = function(force_name) story.test_recharge(game.forces[force_name]) end,
   test_set_story_victory = function(value) settings.global["sap-story-victory"] = { value = value } end, -- luacheck: ignore 122
