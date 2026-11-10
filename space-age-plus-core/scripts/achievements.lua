@@ -81,4 +81,10 @@ function achievements.on_ending(force, ending, chosen)
   end
 end
 
+function achievements.on_player_removed(event)
+  local s = state()
+  s.unlocked[event.player_index] = nil
+  s.clean[event.player_index] = nil
+end
+
 return achievements

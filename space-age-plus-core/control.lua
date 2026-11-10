@@ -38,7 +38,11 @@ end)
 script.on_nth_tick(oxygen.TICK_INTERVAL, oxygen.on_tick)
 script.on_event(defines.events.on_player_created, oxygen.on_player_created)
 script.on_event(defines.events.on_player_respawned, oxygen.on_player_respawned)
-script.on_event(defines.events.on_player_removed, oxygen.on_player_removed)
+script.on_event(defines.events.on_player_removed, function(event)
+  oxygen.on_player_removed(event)
+  dungeon.on_player_removed(event)
+  achievements.on_player_removed(event)
+end)
 script.on_event(defines.events.on_runtime_mod_setting_changed, oxygen.on_settings_changed)
 
 -- Дневник

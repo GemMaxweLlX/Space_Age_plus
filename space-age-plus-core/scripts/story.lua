@@ -167,6 +167,8 @@ end
 
 -- Печать: подземелья обрушиваются, входы засыпаны; энергия ушла в породу (+25% добычи).
 function EFFECTS.seal(force)
+  -- Подземелья общие: печать одной команды закрывает их для всех.
+  game.print({ "sap-story.sealed-by", force.name })
   dungeon.seal()
   for _, surface in pairs(game.surfaces) do
     for _, e in pairs(surface.find_entities_filtered({ name = "sap-dungeon-entrance" })) do e.destroy() end

@@ -540,7 +540,7 @@ function dungeon.on_tick()
         d.door.destroy()
         d.lock.disabled_by_script = true
         table.remove(s.doors, i)
-        game.forces.player.print({ "sap-dungeon.door-opened" })
+        for _, force in pairs(forces_on(door_surface)) do force.print({ "sap-dungeon.door-opened" }) end
         notify("door", d.planet, door_surface)
       end
     end
@@ -622,8 +622,9 @@ function dungeon.can_reset(planet)
       and not record.final_cache.get_inventory(defines.inventory.chest).is_empty() then
     return false -- добыча прошлой повторной экспедиции ещё не забрана
   end
+  -- Мешают только игроки в сети: вышедших из игры новая экспедиция поднимет на поверхность.
   local surface = game.get_surface(record.surface)
-  for _, player in pairs(game.players) do
+  for _, player in pairs(game.connected_players) do
     if surface and player.surface == surface then return false end
   end
   return true
@@ -638,7 +639,12 @@ function dungeon.reset(planet, player)
     if s.doors[i].planet == planet then table.remove(s.doors, i) end
   end
   local surface = game.get_surface(record.surface)
-  if surface then game.delete_surface(surface) end
+  if surface then
+    for _, other in pairs(game.players) do
+      if other.surface == surface then dungeon.leave(other) end
+    end
+    game.delete_surface(surface)
+  end
   s.planets[planet] = nil
   s.runs = s.runs or {}
   s.runs[planet] = (record.run or 0) + 1
@@ -742,6 +748,11 @@ function dungeon.on_player_died(event)
   if not player then return end
   local planet = dungeon.planet_of_dungeon(player.surface)
   if planet then notify("death", planet, nil, player) end
+end
+
+function dungeon.on_player_removed(event)
+  local s = state()
+  s.returns[event.player_index] = nil
 end
 
 --- Концовка «Печать»: игроки поднимаются на поверхность, подземелья обрушиваются навсегда.

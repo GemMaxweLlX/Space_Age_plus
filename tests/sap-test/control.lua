@@ -1318,6 +1318,66 @@ steps[11600] = function()
   check("dungeon: double lock opens with power and key", double_door ~= nil and not double_door.valid)
 end
 
+-- Несколько команд (мультиплеер): ловушки, бонусы ядер и сюжет у каждой команды свои.
+steps[9900] = function()
+  local a, b = game.create_force("sap-mp-a"), game.create_force("sap-mp-b")
+  storage.mp = { a = a, b = b }
+  local surface = game.get_surface("sap-dungeon-gleba")
+  local traps = surface.find_entities_filtered({ name = "sap-ancient-trap", limit = 2 })
+  local ca = surface.create_entity({ name = "character", position = traps[1].position, force = a })
+  local cb = surface.create_entity({ name = "character", position = traps[2].position, force = b })
+  local ha, hb = ca.health, cb.health
+  remote.call("sap-core", "dungeon_step_on_traps", ca, "gleba")
+  remote.call("sap-core", "dungeon_step_on_traps", cb, "gleba")
+  check("multiplayer: traps hurt characters of different forces", ca.health < ha and cb.health < hb)
+  ca.destroy()
+  cb.destroy()
+
+  local nauvis = game.surfaces.nauvis
+  local vulcanus_core = remote.call("sap-core", "cores_item", "vulcanus")
+  storage.mp.bonus_a, storage.mp.bonus_b = a.mining_drill_productivity_bonus, b.mining_drill_productivity_bonus
+  storage.mp.pedestals = {}
+  for i = 1, 2 do
+    local pedestal = nauvis.create_entity({
+      name = "sap-ancient-pedestal", force = a, raise_built = true,
+      position = nauvis.find_non_colliding_position("sap-ancient-pedestal", { 200 + i * 4, -200 }, 40, 1),
+    })
+    pedestal.insert({ name = vulcanus_core, count = 1 })
+    storage.mp.pedestals[i] = pedestal
+  end
+end
+
+steps[9980] = function()
+  local a, b = storage.mp.a, storage.mp.b
+  check("multiplayer: core bonus goes to the owner force", math.abs(a.mining_drill_productivity_bonus
+        - storage.mp.bonus_a - 0.1) < 0.001, a.mining_drill_productivity_bonus)
+  check("multiplayer: identical cores do not stack", a.mining_drill_productivity_bonus < storage.mp.bonus_a + 0.15)
+  check("multiplayer: other force gets no bonus", b.mining_drill_productivity_bonus == storage.mp.bonus_b)
+  for _, p in pairs(storage.mp.pedestals) do p.destroy() end
+  -- Сюжет: у команды A полный узел и концовка, у B — ничего.
+  local nauvis = game.surfaces.nauvis
+  local nexus = nauvis.create_entity({
+    name = "sap-ancient-nexus", force = a, raise_built = true,
+    position = nauvis.find_non_colliding_position("sap-ancient-nexus", { 260, -200 }, 60, 1),
+  })
+  for _, entry in pairs(prototypes.mod_data["sap-ancient-cores"].data) do nexus.insert({ name = entry.item, count = 1 }) end
+  check("multiplayer: force A chooses an ending", remote.call("sap-core", "story_choose", a.name, "inherit") == true)
+  check("multiplayer: force B is not affected", remote.call("sap-core", "story_stage", b.name) == "choose"
+        and remote.call("sap-core", "story_ending", b.name) == nil
+        and next(remote.call("sap-core", "story_available", b.name)) == nil)
+  check("multiplayer: alien technologies only for force A", a.technologies["sap-alien-grip"].researched
+        and not b.technologies["sap-alien-grip"].researched)
+  nexus.destroy()
+  -- Наследие могло дать свои бонусы добычи; бонус ядра Вулкануса (+0.1) ещё действует.
+  storage.mp.expected_a = a.mining_drill_productivity_bonus - 0.1
+end
+
+steps[10060] = function()
+  check("multiplayer: removed pedestals take the bonus away",
+        math.abs(storage.mp.a.mining_drill_productivity_bonus - storage.mp.expected_a) < 0.001,
+        storage.mp.a.mining_drill_productivity_bonus .. " vs " .. storage.mp.expected_a)
+end
+
 -- Сюжет и концовки ------------------------------------------------------------------------
 local function has_entry(force_name, key)
   for _, k in pairs(remote.call("sap-diary", "entries", force_name)) do if k == key then return true end end
