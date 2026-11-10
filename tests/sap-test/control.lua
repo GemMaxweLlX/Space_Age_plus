@@ -1414,6 +1414,12 @@ steps[11900] = function()
   end
   check("story: inheritance researches ancient technologies", all)
   check("story: inheritance epilogue", has_entry("player", "story-ending-inherit"))
+  local enemy_guardians = 0
+  for _, surface in pairs(game.surfaces) do
+    enemy_guardians = enemy_guardians + surface.count_entities_filtered({ name = "sap-alien-guardian", force = "enemy" })
+  end
+  check("story: inheritance — ancient guardians crumble", enemy_guardians == 0, enemy_guardians)
+  check("story: inheritance — lab productivity", game.forces.player.laboratory_productivity_bonus >= 0.1)
   check("story: stay", remote.call("sap-core", "story_decide", "player", "stay") == true)
   check("story: stay entry", has_entry("player", "story-stay"))
   check("story: recharging after staying", remote.call("sap-core", "story_stage", "player") == "recharge")
@@ -1425,6 +1431,12 @@ steps[11900] = function()
   check("story: other endings open after recharge", available.restore and available.seal and not available.inherit)
   check("story: secret ending still locked after one ending", not available.unity)
   check("story: second ending (awakening)", remote.call("sap-core", "story_choose", "player", "restore") == true)
+  check("story: awakening — guardian squad by the nexus", nexus.surface.count_entities_filtered({
+    name = "sap-alien-guardian", force = "player", position = nexus.position, radius = 20 }) >= 4)
+  local items_before = nexus.surface.count_entities_filtered({ type = "item-entity", position = nexus.position, radius = 10 })
+  remote.call("sap-core", "test_story_gift", "player")
+  check("story: awakening — gifts from the ancients", nexus.surface.count_entities_filtered({
+    type = "item-entity", position = nexus.position, radius = 10 }) > items_before)
   remote.call("sap-core", "story_decide", "player", "stay")
   remote.call("sap-core", "test_story_recharge", "player")
   available = remote.call("sap-core", "story_available", "player")
@@ -1436,11 +1448,14 @@ steps[11900] = function()
 
   -- Возвращение домой (отдельная команда).
   local home = game.create_force("sap-story-home")
-  complete_nexus(home, { -120, 60 })
+  local home_nexus = complete_nexus(home, { -120, 60 })
   remote.call("sap-core", "story_choose", home.name, "inherit")
   check("story: go home", remote.call("sap-core", "story_decide", home.name, "return") == true
         and remote.call("sap-core", "story_stage", home.name) == "done")
   check("story: return epilogue", has_entry(home.name, "story-return"))
+  local crate = home_nexus.surface.find_entities_filtered({ name = "steel-chest", force = home, position = home_nexus.position,
+                                                            radius = 25, limit = 1 })[1]
+  check("story: going home — company reward crate", crate ~= nil and crate.get_item_count("processing-unit") == 200)
 
   -- Пробуждение (отдельная команда): стражи становятся союзниками.
   local awake = game.create_force("sap-story-awake")
@@ -1459,6 +1474,11 @@ steps[11900] = function()
   storage.story_bonus = sealer.mining_drill_productivity_bonus
   remote.call("sap-core", "story_choose", sealer.name, "seal")
   check("story: seal adds mining productivity", sealer.mining_drill_productivity_bonus > storage.story_bonus + 0.2)
+  local entrances = 0
+  for _, surface in pairs(game.surfaces) do
+    entrances = entrances + surface.count_entities_filtered({ name = "sap-dungeon-entrance" })
+  end
+  check("story: seal buries the dungeon entrances", entrances == 0, entrances)
 end
 
 steps[12000] = function()

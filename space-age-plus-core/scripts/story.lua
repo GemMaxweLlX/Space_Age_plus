@@ -101,18 +101,51 @@ end
 
 -- Концовки ------------------------------------------------------------------------------
 
-local EFFECTS = {}
+local function say(force, message)
+  force.print(message, { color = { r = 0.6, g = 1, b = 0.85 } })
+end
 
-function EFFECTS.restore(force)
+local EFFECTS = {}
+local GUARDIANS = { "sap-alien-guardian", "sap-ancient-keeper", "sap-ancient-warden" }
+local ESCORT = 4                       -- союзных стражей у узла после Пробуждения
+local GIFT_TICKS = 30 * 60 * 60        -- дар древних раз в 30 минут
+local REWARD = {                       -- ящик компании при возвращении домой
+  { name = "processing-unit", count = 200 }, { name = "low-density-structure", count = 100 },
+  { name = "rocket-fuel", count = 100 }, { name = "sap-alien-data", count = 5 },
+}
+
+--- Узел команды (для мест, где появляются стражи, дары и награда) или точка появления.
+local function home_of(force)
+  for _, entity in pairs(storage.cores and storage.cores.holders or {}) do
+    if entity.valid and entity.name == NEXUS and entity.force == force then return entity.surface, entity.position end
+  end
+  return game.surfaces.nauvis, force.get_spawn_position(game.surfaces.nauvis)
+end
+
+local function convert_guardians(force)
   for _, surface in pairs(game.surfaces) do
-    for _, e in pairs(surface.find_entities_filtered({ name = { "sap-alien-guardian", "sap-ancient-keeper" },
-                                                       force = "enemy" })) do
-      e.force = force
-    end
+    for _, e in pairs(surface.find_entities_filtered({ name = GUARDIANS, force = "enemy" })) do e.force = force end
   end
 end
 
-function EFFECTS.inherit(force)
+local function escort(force, count)
+  local surface, position = home_of(force)
+  for i = 1, count do
+    local angle = i / count * 2 * math.pi
+    local at = surface.find_non_colliding_position("sap-alien-guardian",
+      { position.x + math.cos(angle) * 8, position.y + math.sin(angle) * 8 }, 16, 1)
+    if at then surface.create_entity({ name = "sap-alien-guardian", position = at, force = force }) end
+  end
+end
+
+-- Пробуждение: стражи древних становятся союзниками, у узла встаёт отряд, древние шлют дары.
+function EFFECTS.restore(force)
+  convert_guardians(force)
+  escort(force, ESCORT)
+  force_state(force).gift_at = game.tick + GIFT_TICKS
+end
+
+local function research_alien(force)
   for name, tech in pairs(force.technologies) do
     if string.sub(name, 1, 10) == "sap-alien-" then
       tech.enabled = true
@@ -121,15 +154,55 @@ function EFFECTS.inherit(force)
   end
 end
 
+-- Наследие: знания забраны — стражи древних теряют смысл и рассыпаются; лаборатории +10%.
+function EFFECTS.inherit(force)
+  research_alien(force)
+  for _, surface in pairs(game.surfaces) do
+    for _, e in pairs(surface.find_entities_filtered({ name = GUARDIANS, force = "enemy" })) do e.die() end
+  end
+  force.laboratory_productivity_bonus = force.laboratory_productivity_bonus + 0.1
+end
+
+-- Печать: подземелья обрушиваются, входы засыпаны; энергия ушла в породу (+25% добычи).
 function EFFECTS.seal(force)
   dungeon.seal()
+  for _, surface in pairs(game.surfaces) do
+    for _, e in pairs(surface.find_entities_filtered({ name = "sap-dungeon-entrance" })) do e.destroy() end
+  end
   force.mining_drill_productivity_bonus = force.mining_drill_productivity_bonus + 0.25
 end
 
--- Единство: союз с древними и их знания (без обрушения подземелий).
+-- Единство: союз с древними и их знания (без обрушения подземелий), отряд больше.
 function EFFECTS.unity(force)
-  EFFECTS.restore(force)
-  EFFECTS.inherit(force)
+  convert_guardians(force)
+  escort(force, ESCORT * 2)
+  research_alien(force)
+  force.laboratory_productivity_bonus = force.laboratory_productivity_bonus + 0.1
+  force_state(force).gift_at = game.tick + GIFT_TICKS
+end
+
+--- Дар древних: карты и данные у узла.
+function story.gift(force)
+  local surface, position = home_of(force)
+  local quality = ({ "normal", "uncommon", "rare", "epic", "legendary" })[math.random(1, 5)]
+  surface.spill_item_stack({ position = position, stack = { name = "sap-data-card-alien", count = 1, quality = quality },
+                             enable_looted = true, force = force, allow_belts = false })
+  surface.spill_item_stack({ position = position, stack = { name = "sap-alien-data", count = 2 },
+                             enable_looted = true, force = force, allow_belts = false })
+  say(force, { "sap-story.gift", string.format("[gps=%d,%d,%s]", position.x, position.y, surface.name) })
+end
+
+--- Награда компании при возвращении: ящик у узла.
+local function company_reward(force)
+  local surface, position = home_of(force)
+  local at = surface.find_non_colliding_position("steel-chest", { position.x, position.y + 6 }, 20, 1)
+  if not at then return end
+  local crate = surface.create_entity({ name = "steel-chest", position = at, force = force })
+  for _, stack in pairs(REWARD) do
+    if prototypes.item[stack.name] then crate.insert(stack) end
+  end
+  say(force, { "sap-story.reward", string.format("[gps=%d,%d,%s]", at.x, at.y, surface.name) })
+  return crate
 end
 
 local function victory(force)
@@ -148,9 +221,6 @@ local function refresh_windows(force)
   end
 end
 
-local function say(force, message)
-  force.print(message, { color = { r = 0.6, g = 1, b = 0.85 } })
-end
 
 --- Выбор концовки командой. Возвращает false, если сейчас её выбрать нельзя.
 function story.choose(force, ending)
@@ -178,6 +248,7 @@ function story.decide(force, decision)
     fs.stage = "done"
     diary.add(force, "story-return")
     say(force, { "sap-story.returned" })
+    company_reward(force)
     victory(force)
   elseif decision == "stay" then
     fs.stage = "recharge"
@@ -206,6 +277,10 @@ function story.on_tick()
       say(force, { "sap-story.recharged" })
       diary.add(force, "story-recharged")
       refresh_windows(force)
+    end
+    if type(fs) == "table" and fs.gift_at and game.tick >= fs.gift_at then
+      fs.gift_at = game.tick + GIFT_TICKS
+      story.gift(force)
     end
   end
 end

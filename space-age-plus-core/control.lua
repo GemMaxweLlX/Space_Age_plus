@@ -177,6 +177,7 @@ remote.add_interface("sap-core", {
   story_decide = function(force_name, decision) return story.decide(game.forces[force_name], decision) end,
   story_stage = function(force_name) return story.stage_of(game.forces[force_name]) end,
   story_available = function(force_name) return story.available(game.forces[force_name]) end,
+  test_story_gift = function(force_name) story.gift(game.forces[force_name]) end,
   test_story_recharge = function(force_name) story.test_recharge(game.forces[force_name]) end,
   test_set_story_victory = function(value) settings.global["sap-story-victory"] = { value = value } end, -- luacheck: ignore 122
   researched_quality = function(force_name, tech) return quality_bonus.researched_quality(game.forces[force_name], tech) end,
