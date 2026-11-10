@@ -1172,7 +1172,8 @@ steps[9600] = function()
         local caches = surface.find_entities_filtered({ name = "sap-ancient-cache" })
         check("dungeon " .. planet .. ": caches", #caches >= record.rooms - 1, #caches)
         local cores = 0
-        for _, c in pairs(caches) do cores = cores + c.get_inventory(defines.inventory.chest).get_item_count("sap-ancient-core") end
+        local core_item = remote.call("sap-core", "cores_item", planet)
+        for _, c in pairs(caches) do cores = cores + c.get_inventory(defines.inventory.chest).get_item_count(core_item) end
         check("dungeon " .. planet .. ": ancient core", cores == 1, cores)
         local locks = remote.call("sap-core", "dungeon_door_locks", planet)
         local all_locked = true
@@ -1252,11 +1253,8 @@ steps[11700] = function()
   local packs = prototypes.mod_data["sap-planet-packs"].data
   local in_tech = {}
   for _, ing in pairs(tech.research_unit_ingredients) do in_tech[ing.name] = true end
-  local in_recipe, cores = {}, 0
-  for _, ing in pairs(recipe.ingredients) do
-    in_recipe[ing.name] = true
-    if ing.name == "sap-ancient-core" then cores = ing.amount end
-  end
+  local in_recipe = {}
+  for _, ing in pairs(recipe.ingredients) do in_recipe[ing.name] = true end
   local n, all_tech, all_recipe = 0, true, true
   for pack in pairs(packs) do
     n = n + 1
@@ -1265,20 +1263,63 @@ steps[11700] = function()
   end
   check("story: nexus tech needs every planet pack", all_tech)
   check("story: nexus recipe needs every planet pack", all_recipe)
-  check("story: nexus recipe needs a core per planet", cores == n, cores .. " vs " .. n)
+  local registry = prototypes.mod_data["sap-ancient-cores"].data
+  local planets = 0
+  for planet, entry in pairs(registry) do
+    planets = planets + 1
+    check("cores: item for " .. planet, prototypes.item[entry.item] ~= nil)
+  end
+  check("cores: one per planet with a pack", planets == n, planets .. " vs " .. n)
+  check("cores: nexus holds a core of every planet",
+        prototypes.entity["sap-ancient-nexus"].get_inventory_size(defines.inventory.chest) == planets)
   -- Забираем ядра из трёх подземелий.
   storage.story_taken = 0
   for _, planet in pairs({ "nauvis", "vulcanus", "fulgora" }) do
     local surface = game.get_surface("sap-dungeon-" .. planet)
     for _, cache in pairs(surface and surface.find_entities_filtered({ name = "sap-ancient-cache" }) or {}) do
-      local removed = cache.get_inventory(defines.inventory.chest).remove({ name = "sap-ancient-core", count = 1 })
+      local item = remote.call("sap-core", "cores_item", planet)
+      local removed = cache.get_inventory(defines.inventory.chest).remove({ name = item, count = 1 })
       storage.story_taken = storage.story_taken + removed
     end
   end
   check("story: took three cores", storage.story_taken == 3, storage.story_taken)
+  -- Ядро Наувиса в пьедестал: +100 здоровья персонажа всей команде.
+  local nauvis = game.surfaces.nauvis
+  storage.pedestal = nauvis.create_entity({
+    name = "sap-ancient-pedestal", force = "player", raise_built = true,
+    position = nauvis.find_non_colliding_position("sap-ancient-pedestal", { -40, 60 }, 40, 1),
+  })
+  storage.health_bonus = game.forces.player.character_health_bonus
+  storage.pedestal.insert({ name = remote.call("sap-core", "cores_item", "nauvis"), count = 1 })
 end
 
-steps[11800] = function()
+steps[11780] = function()
+  local force = game.forces.player
+  check("cores: pedestal technology unlocked by taking a core", force.technologies["sap-ancient-pedestal"].researched)
+  check("cores: core in pedestal gives the planet bonus",
+        math.abs(force.character_health_bonus - storage.health_bonus - 100) < 0.01, force.character_health_bonus)
+  storage.pedestal.get_inventory(defines.inventory.chest).clear()
+end
+
+steps[11850] = function()
+  local force = game.forces.player
+  check("cores: bonus removed with the core", math.abs(force.character_health_bonus - storage.health_bonus) < 0.01,
+        force.character_health_bonus)
+  check("cores: no active bonus", next(remote.call("sap-core", "cores_applied", "player")) == nil)
+end
+
+--- Узел команды со всеми ядрами планет.
+local function complete_nexus(force, near)
+  local nauvis = game.surfaces.nauvis
+  local nexus = nauvis.create_entity({
+    name = "sap-ancient-nexus", force = force, raise_built = true,
+    position = nauvis.find_non_colliding_position("sap-ancient-nexus", near, 60, 1),
+  })
+  for _, entry in pairs(prototypes.mod_data["sap-ancient-cores"].data) do nexus.insert({ name = entry.item, count = 1 }) end
+  return nexus
+end
+
+steps[11900] = function()
   check("story: core fragment Nauvis", has_entry("player", "story-core-nauvis"))
   check("story: core fragment Fulgora", has_entry("player", "story-core-fulgora"))
   check("story: pattern after three cores", has_entry("player", "story-pattern"))
@@ -1289,6 +1330,9 @@ steps[11800] = function()
   })
   check("story: nexus built", nexus ~= nil)
   check("story: nexus diary entry", has_entry("player", "story-nexus"))
+  check("story: no ending without the cores", remote.call("sap-core", "story_choose", "player", "inherit") == false
+        and next(remote.call("sap-core", "story_available", "player")) == nil)
+  for _, entry in pairs(prototypes.mod_data["sap-ancient-cores"].data) do nexus.insert({ name = entry.item, count = 1 }) end
 
   -- Наследие (команда player), затем «остаться» и другие концовки.
   check("story: choose inheritance", remote.call("sap-core", "story_choose", "player", "inherit") == true)
@@ -1323,6 +1367,7 @@ steps[11800] = function()
 
   -- Возвращение домой (отдельная команда).
   local home = game.create_force("sap-story-home")
+  complete_nexus(home, { -120, 60 })
   remote.call("sap-core", "story_choose", home.name, "inherit")
   check("story: go home", remote.call("sap-core", "story_decide", home.name, "return") == true
         and remote.call("sap-core", "story_stage", home.name) == "done")
@@ -1330,6 +1375,7 @@ steps[11800] = function()
 
   -- Пробуждение (отдельная команда): стражи становятся союзниками.
   local awake = game.create_force("sap-story-awake")
+  complete_nexus(awake, { -160, 60 })
   local guardian = game.surfaces.nauvis.create_entity({
     name = "sap-alien-guardian", force = "enemy",
     position = game.surfaces.nauvis.find_non_colliding_position("sap-alien-guardian", { -90, 90 }, 60, 1),
@@ -1340,12 +1386,14 @@ steps[11800] = function()
 
   -- Печать (ещё одна команда): подземелья обрушиваются.
   local sealer = game.create_force("sap-story-seal")
+  complete_nexus(sealer, { -200, 60 })
   storage.story_bonus = sealer.mining_drill_productivity_bonus
   remote.call("sap-core", "story_choose", sealer.name, "seal")
   check("story: seal adds mining productivity", sealer.mining_drill_productivity_bonus > storage.story_bonus + 0.2)
 end
 
-steps[11900] = function()
+steps[12000] = function()
+  check("cores: nexus cores give their bonuses", remote.call("sap-core", "cores_applied", "player").nauvis == true)
   check("story: seal collapses the dungeons", game.get_surface("sap-dungeon-nauvis") == nil
         and game.get_surface("sap-dungeon-echaris") == nil)
 end

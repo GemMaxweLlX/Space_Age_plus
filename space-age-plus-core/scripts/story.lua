@@ -15,6 +15,7 @@
 
 local diary = require("scripts.diary")
 local dungeon = require("scripts.dungeon")
+local cores = require("scripts.cores")
 
 local story = {}
 
@@ -73,6 +74,7 @@ function story.available(force)
   local fs = force_state(force)
   local result = {}
   if story.stage_of(force) ~= "choose" then return result end
+  if not cores.nexus_complete(force) then return result end -- в узле нужны ядра всех планет
   for _, ending in pairs(ENDINGS) do
     if not has_chosen(fs, ending) then result[ending] = true end
   end
@@ -84,12 +86,12 @@ end
 function story.on_core_taken(force, planet)
   local s = state()
   s.cores[force.index] = s.cores[force.index] or {}
-  local cores = s.cores[force.index]
-  if cores[planet] then return end
-  cores[planet] = true
+  local taken = s.cores[force.index]
+  if taken[planet] then return end
+  taken[planet] = true
   diary.add(force, KNOWN_PLANETS[planet] and ("story-core-" .. planet) or "story-core-other")
   local n = 0
-  for _ in pairs(cores) do n = n + 1 end
+  for _ in pairs(taken) do n = n + 1 end
   if n >= 3 then diary.add(force, "story-pattern") end
 end
 
@@ -237,7 +239,16 @@ function story.build_window(player)
   local fs = force_state(force)
   local stage = story.stage_of(force)
   local caption
-  if stage == "choose" then
+  local complete, missing = cores.nexus_complete(force)
+  if stage == "choose" and not complete then
+    local list = { "" }
+    for i, planet in pairs(missing) do
+      if i > 1 then list[#list + 1] = ", " end
+      list[#list + 1] = { "space-location-name." .. planet }
+      if #list > 18 then break end -- локализованная строка: не больше 20 параметров
+    end
+    caption = { "sap-story.need-cores", list }
+  elseif stage == "choose" then
     caption = #fs.chosen == 0 and { "sap-story.choose" } or { "sap-story.choose-again", ending_list(fs) }
   elseif stage == "decide" then
     caption = { "sap-story.decide", { "sap-story.ending-" .. fs.chosen[#fs.chosen] } }
@@ -274,6 +285,7 @@ end
 function story.on_gui_opened(event)
   local entity = event.entity
   if not (entity and entity.valid and entity.name == NEXUS) then return end
+  cores.on_built(entity) -- узел мог появиться скриптом без события постройки
   local player = game.get_player(event.player_index)
   if player then story.build_window(player) end
 end

@@ -9,6 +9,7 @@ local condensing = require("scripts.condensing")
 local no_delivery = require("scripts.no_delivery")
 local dungeon = require("scripts.dungeon")
 local story = require("scripts.story")
+local cores = require("scripts.cores")
 dungeon.on_core_taken = story.on_core_taken
 
 script.on_init(function()
@@ -25,6 +26,7 @@ script.on_configuration_changed(function()
   techtree.on_configuration_changed()
   dungeon.on_init()
   dungeon.add_missing_entrances()
+  cores.on_configuration_changed()
 end)
 
 -- Кислород
@@ -76,6 +78,7 @@ for _, e in pairs({ defines.events.on_built_entity, defines.events.on_robot_buil
     quality_bonus.on_built(event)
     diary.on_built(event)
     story.on_built(entity)
+    cores.on_built(entity)
   end)
 end
 for _, e in pairs({ defines.events.on_player_mined_entity, defines.events.on_robot_mined_entity,
@@ -157,6 +160,8 @@ remote.add_interface("sap-core", {
     end
     return result
   end,
+  cores_applied = function(force_name) return cores.applied(game.forces[force_name]) end,
+  cores_item = function(planet) return cores.item_of(planet) end,
   story_choose = function(force_name, ending) return story.choose(game.forces[force_name], ending) end,
   story_ending = function(force_name) return story.ending_of(game.forces[force_name]) end,
   story_decide = function(force_name, decision) return story.decide(game.forces[force_name], decision) end,
@@ -181,3 +186,6 @@ script.on_nth_tick(dungeon.TICK_INTERVAL + 3, dungeon.on_tick)
 
 -- Сюжет: перезарядка Древнего узла после «остаться».
 script.on_nth_tick(3600 + 11, story.on_tick)
+
+-- Ядра планет: бонусы, пока ядро в пьедестале или узле.
+script.on_nth_tick(cores.TICK_INTERVAL + 5, cores.on_tick)

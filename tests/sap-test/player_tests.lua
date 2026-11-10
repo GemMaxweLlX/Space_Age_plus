@@ -238,6 +238,13 @@ function player_tests.register(steps, check, finish)
     })
     p.opened = nexus
     local frame = p.gui.relative["sap_story_frame"]
+    check("player story: empty nexus asks for the cores", frame ~= nil and frame.restore ~= nil
+          and not frame.restore.enabled and type(frame.label.caption) == "table"
+          and frame.label.caption[1] == "sap-story.need-cores")
+    for _, entry in pairs(prototypes.mod_data["sap-ancient-cores"].data) do nexus.insert({ name = entry.item, count = 1 }) end
+    p.opened = nil
+    p.opened = nexus
+    frame = p.gui.relative["sap_story_frame"]
     check("player story: nexus window with three endings", frame ~= nil and frame.restore ~= nil
           and frame.inherit ~= nil and frame.seal ~= nil)
     if frame then remote.call("sap-core", "test_click", p.index, frame.restore) end

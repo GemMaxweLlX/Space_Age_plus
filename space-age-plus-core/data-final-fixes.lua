@@ -59,23 +59,55 @@ do
       if not has then table.insert(lab.inputs, pack) end
     end
   end
-  -- Древний узел (сюжет): колбы всех планет в технологии, по ядру на каждую планету и по 10
-  -- колб каждой планеты в рецепте.
+  -- Древний узел (сюжет): колбы всех планет в технологии и по 10 колб каждой планеты в рецепте.
+  -- Ядра не тратятся: их кладут в сам узел (концовки открываются, когда там ядро каждой планеты).
   local nexus_tech, nexus_recipe = data.raw.technology["sap-ancient-nexus"], data.raw.recipe["sap-ancient-nexus"]
   if nexus_tech and nexus_recipe then
     local names = {}
     for pack in pairs(packs and packs.data or {}) do names[#names + 1] = pack end
     table.sort(names)
-    local planets = #names
     for _, pack in pairs(names) do
       add_pack(nexus_tech, pack)
       table.insert(nexus_recipe.ingredients, { type = "item", name = pack, amount = 10 })
     end
-    -- Без подземелий ядер нет: узел строится из колб.
-    if sap_settings.get("sap-dungeons-enabled") ~= false then
-      table.insert(nexus_recipe.ingredients, { type = "item", name = "sap-ancient-core", amount = math.max(1, planets) })
+  end
+end
+
+-- Ядра планет (подземелья): у каждой планеты своё ядро и свой бонус, пока ядро лежит
+-- в Древнем пьедестале или в Древнем узле. Узел вмещает по ядру каждой планеты.
+do
+  local CORES = {
+    { "nauvis", { r = 0.5, g = 1, b = 0.5 }, "character_health_bonus", 100 },
+    { "vulcanus", { r = 1, g = 0.5, b = 0.2 }, "mining_drill_productivity_bonus", 0.1 },
+    { "fulgora", { r = 0.8, g = 0.5, b = 1 }, "laboratory_speed_modifier", 0.2 },
+    { "gleba", { r = 0.9, g = 1, b = 0.3 }, "manual_crafting_speed_modifier", 0.5 },
+    { "aquilo", { r = 0.6, g = 0.9, b = 1 }, "worker_robots_battery_modifier", 0.3 },
+    { "solaris", { r = 1, g = 0.85, b = 0.2 }, "laboratory_productivity_bonus", 0.05 },
+    { "echaris", { r = 0.3, g = 0.6, b = 1 }, "worker_robots_speed_modifier", 0.2 },
+    { "aquara", { r = 0.2, g = 0.9, b = 0.8 }, "character_running_speed_modifier", 0.2 },
+    { "nivar", { r = 0.85, g = 0.95, b = 1 }, "bulk_inserter_capacity_bonus", 1 },
+  }
+  local registry = {}
+  local order = 0
+  for _, c in pairs(CORES) do
+    local planet, tint, modifier, value = c[1], c[2], c[3], c[4]
+    if data.raw.planet[planet] then
+      order = order + 1
+      local item = "sap-ancient-core-" .. planet
+      data:extend({ {
+        type = "item", name = item,
+        icons = { { icon = "__base__/graphics/icons/uranium-235.png", icon_size = 64, tint = tint } },
+        localised_name = { "item-name.sap-ancient-core-of", { "space-location-name." .. planet } },
+        localised_description = { "item-description.sap-ancient-core-bonus",
+                                  { "sap-core-bonus." .. modifier }, tostring(value) },
+        subgroup = "sap-tech-data", order = string.format("d-b%02d", order), stack_size = 10,
+      } })
+      registry[planet] = { item = item, modifier = modifier, value = value }
     end
   end
+  data:extend({ { type = "mod-data", name = "sap-ancient-cores", data = registry } })
+  local nexus = data.raw.container["sap-ancient-nexus"]
+  if nexus and sap_settings.get("sap-dungeons-enabled") ~= false then nexus.inventory_size = math.max(1, order) end
 end
 
 -- Ванильные планеты тоже открываются через спутники, если включена настройка.

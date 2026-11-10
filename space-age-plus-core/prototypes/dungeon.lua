@@ -46,6 +46,31 @@ data:extend({
   container("sap-dungeon-exit", "crash-site-chest-1", 1),
   container("sap-ancient-key-lock", "crash-site-chest-2", 1),
   container("sap-ancient-cache", "crash-site-chest-1", 8),
+  (function()
+    -- Пьедестал: ядро планеты в нём даёт бонус планеты всей команде.
+    local pedestal = container("sap-ancient-pedestal", "crash-site-chest-2", 1)
+    pedestal.minable = { mining_time = 1, result = "sap-ancient-pedestal" }
+    pedestal.flags = { "placeable-player", "player-creation" }
+    pedestal.hidden = nil
+    return pedestal
+  end)(),
+  {
+    type = "item", name = "sap-ancient-pedestal", place_result = "sap-ancient-pedestal",
+    icons = { { icon = "__base__/graphics/icons/iron-chest.png", icon_size = 64, tint = TINT } },
+    subgroup = "sap-tech-data", order = "d-d", stack_size = 10,
+  },
+  {
+    type = "recipe", name = "sap-ancient-pedestal", enabled = false, energy_required = 10,
+    ingredients = { { type = "item", name = "steel-plate", amount = 20 }, { type = "item", name = "advanced-circuit", amount = 10 } },
+    results = { { type = "item", name = "sap-ancient-pedestal", amount = 1 } },
+  },
+  {
+    -- Открывается, когда команда забирает первое древнее ядро (scripts/dungeon.lua).
+    type = "technology", name = "sap-ancient-pedestal",
+    icons = { { icon = "__base__/graphics/icons/iron-chest.png", icon_size = 64, tint = TINT } },
+    effects = { { type = "unlock-recipe", recipe = "sap-ancient-pedestal" } },
+    research_trigger = { type = "scripted", trigger_description = { "technology-trigger.sap-ancient-pedestal" } },
+  },
   door, power_lock, keeper,
   {
     type = "item", name = "sap-ancient-key",

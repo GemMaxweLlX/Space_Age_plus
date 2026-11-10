@@ -8,6 +8,7 @@
 
 local diary = require("scripts.diary")
 local sap_settings = require("sap_settings")
+local cores = require("scripts.cores")
 
 local dungeon = {}
 
@@ -244,12 +245,12 @@ local function place(surface, name, x, y, force, radius)
   return e
 end
 
-local function fill_cache(cache, depth, final)
+local function fill_cache(cache, depth, final, planet)
   local inventory = cache.get_inventory(defines.inventory.chest)
   local quality = QUALITY[math.min(#QUALITY, depth + (final and 2 or 0))]
   inventory.insert({ name = "sap-data-card-alien", count = final and 2 or 1, quality = quality })
   inventory.insert({ name = "sap-alien-data", count = final and 2 or 1 })
-  if final then inventory.insert({ name = "sap-ancient-core", count = 1 }) end
+  if final then inventory.insert({ name = cores.item_of(planet), count = 1 }) end
 end
 
 local function seed_for(planet)
@@ -337,8 +338,9 @@ function dungeon.generate(planet)
   local final_cache = place(surface, CACHE, final.x + 3, final.y + 3)
   if final_cache then
     final_cache.destructible = false
-    fill_cache(final_cache, deepest, true)
+    fill_cache(final_cache, deepest, true, planet)
     record.final_cache = final_cache
+    record.core_item = cores.item_of(planet)
   end
   for _ = 1, 2 do place(surface, "sap-alien-guardian", final.x + rng(-6, 6), final.y + rng(-6, 6), "enemy", 8) end
 
@@ -399,7 +401,7 @@ local function check_cores(s)
   for planet, record in pairs(s.planets) do
     local cache = record.final_cache
     if cache and not record.core_taken
-        and (not cache.valid or cache.get_inventory(defines.inventory.chest).get_item_count("sap-ancient-core") == 0) then
+        and (not cache.valid or cache.get_inventory(defines.inventory.chest).get_item_count(record.core_item or "sap-ancient-core") == 0) then
       record.core_taken = true
       local forces = {}
       local surface = game.get_surface(record.surface)
@@ -409,6 +411,8 @@ local function check_cores(s)
       if next(forces) == nil then forces.player = game.forces.player end
       for _, force in pairs(forces) do
         if dungeon.on_core_taken then dungeon.on_core_taken(force, planet) end
+        local pedestal = force.technologies["sap-ancient-pedestal"]
+        if pedestal and not pedestal.researched then force.script_trigger_research("sap-ancient-pedestal") end
       end
     end
   end

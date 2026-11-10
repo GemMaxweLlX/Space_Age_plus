@@ -18,6 +18,7 @@
 | Резонанс знаний (`sap-alien-resonance`) | 3000 | 60 | red, green, blue, space | space-science-pack |
 | Поле стазиса (`sap-alien-stasis-field`) | 2000 | 60 | red, green, blue, space | space-science-pack |
 | Древний узел (`sap-ancient-nexus`) | 1000 | 60 | red, green, blue, space, pioneer, tectonic, ionic, symbiotic, cryostasis, thermal, cybernetic, hydro, deep | sap-alien-resonance, sap-cryostasis-science-pack, sap-cybernetic-science-pack, sap-deep-science-pack, sap-hydro-science-pack, sap-ionic-science-pack, sap-pioneer-science-pack, sap-symbiotic-science-pack, sap-tectonic-science-pack, sap-thermal-science-pack, space-science-pack |
+| Древний пьедестал (`sap-ancient-pedestal`) | триггер: scripted |  |  |  |
 | Архивный дешифратор (`sap-archive-decipherer`) | 1000 | 60 | red, green, blue, space, electromagnetic, ionic, symbiotic, cybernetic | sap-planet-discovery-echaris |
 | Сборочный автомат Mk2+ (`sap-assembling-machine-mk2plus`) | 1200 | 60 | red, green, blue, space, electromagnetic, ionic, symbiotic, cybernetic | automation-3, sap-planet-discovery-echaris |
 | Биолюминесцентные водоросли (`sap-bioluminescent-algae`) | 800 | 60 | red, green, blue, space, agricultural, symbiotic, hydro | sap-sea-salt-preservation |
@@ -114,7 +115,8 @@
 | Концентратор воздуха (`sap-air-concentrator`) | 2 | 1 steel-plate, 1 lithium-plate | 1 sap-air-concentrator |  |
 | Воздушный фильтр (`sap-air-filter`) | 2 | 1 iron-plate, 1 carbon | 1 sap-air-filter |  |
 | Питательные вещества из водорослей (`sap-algae-nutrients`) | 2 | 2 sap-green-algae | 4 nutrients |  |
-| Древний узел (`sap-ancient-nexus`) | 60 | 50 processing-unit, 10 sap-pioneer-science-pack, 10 sap-tectonic-science-pack, 10 sap-ionic-science-pack, 10 sap-symbiotic-science-pack, 10 sap-cryostasis-science-pack, 10 sap-thermal-science-pack, 10 sap-cybernetic-science-pack, 10 sap-hydro-science-pack, 10 sap-deep-science-pack, 9 sap-ancient-core, 100 refined-concrete | 1 sap-ancient-nexus |  |
+| Древний узел (`sap-ancient-nexus`) | 60 | 50 processing-unit, 10 sap-pioneer-science-pack, 10 sap-tectonic-science-pack, 10 sap-ionic-science-pack, 10 sap-symbiotic-science-pack, 10 sap-cryostasis-science-pack, 10 sap-thermal-science-pack, 10 sap-cybernetic-science-pack, 10 sap-hydro-science-pack, 10 sap-deep-science-pack, 100 refined-concrete | 1 sap-ancient-nexus |  |
+| Древний пьедестал (`sap-ancient-pedestal`) | 10 | 20 steel-plate, 10 advanced-circuit | 1 sap-ancient-pedestal |  |
 | `sap-aquara-food` | 4 | 1 bioflux, 2 sap-green-algae, 1 sap-sea-salt | 2 sap-aquara-food |  |
 | Сборочный автомат Mk2+ (`sap-assembling-machine-mk2plus`) | 10 | 2 sap-mechanite-core, 5 superconductor, 1 assembling-machine-3 | 1 sap-assembling-machine-mk2plus |  |
 | Атмосферный коллектор (`sap-atmospheric-collector`) | 5 | 10 steel-plate, 10 electronic-circuit, 10 pipe | 1 sap-atmospheric-collector |  |
@@ -317,6 +319,7 @@
 | Древняя дверь (`sap-ancient-door`) | simple-entity-with-owner | 50 |  |  |
 | Ключевой замок (`sap-ancient-key-lock`) | container | 350 |  |  |
 | Древний узел (`sap-ancient-nexus`) | container | 600 |  |  |
+| Древний пьедестал (`sap-ancient-pedestal`) | container | 350 |  |  |
 | Энергетический замок (`sap-ancient-power-lock`) | assembling-machine | 300 | 1000 | 1 |
 | Сборочный автомат Mk2+ (`sap-assembling-machine-mk2plus`) | assembling-machine | 400 | 375 | 2.5 |
 | Атмосферный коллектор (`sap-atmospheric-collector`) | assembling-machine | 300 | 210 | 1 |
