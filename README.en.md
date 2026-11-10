@@ -38,6 +38,10 @@ Requires Factorio 2.1 with the Space Age expansion. *Русская версия
 - **Hardcore options** are separate settings: strict oxygen, decipherer only, harder satellites,
   aggressive creatures, permanent storms, no platform delivery, timed waves, no neutral zone.
 
+## For mod authors
+
+Other planet mods can join oxygen, exploration, the hidden tree, hive capture and the diary: see [docs/api.md](docs/api.md).
+
 ## Building and installing
 
 ```bash

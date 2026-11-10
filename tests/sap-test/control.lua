@@ -1048,6 +1048,16 @@ steps[15] = function()
   end
 end
 
+-- Тик 16: API для других модов -----------------------------------------------------------------
+steps[16] = function()
+  if not techtree_on() then return end
+  local catalog = prototypes.mod_data["sap-tech-catalog"].data
+  check("api: keep_visible keeps a technology visible", game.forces.player.technologies["sap-test-visible-tech"].enabled
+        and catalog["sap-test-visible-tech"] == nil)
+  check("api: set_tech_category sets the card category", catalog["sap-test-categorized-tech"]
+        and catalog["sap-test-categorized-tech"].category == "trains")
+end
+
 -- Конец ---------------------------------------------------------------------------
 -- Мусор проверяем раньше: куски медленно пролетают мимо и улетают с карты.
 steps[2900] = function()

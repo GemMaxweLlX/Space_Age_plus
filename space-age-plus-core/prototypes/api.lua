@@ -227,6 +227,29 @@ function api.tip(name, order, tag, trigger)
   })
 end
 
+api.TECH_OVERRIDES = "sap-tech-overrides"
+
+local function tech_overrides()
+  local proto = data.raw["mod-data"] and data.raw["mod-data"][api.TECH_OVERRIDES]
+  if not proto then
+    data:extend({ { type = "mod-data", name = api.TECH_OVERRIDES, data = { visible = {}, category = {} } } })
+    proto = data.raw["mod-data"][api.TECH_OVERRIDES]
+  end
+  return proto.data
+end
+
+--- Скрытое дерево: эта технология никогда не скрывается (например, сюжетная технология мода).
+function api.keep_visible(tech)
+  tech_overrides().visible[tech] = true
+end
+
+--- Скрытое дерево: категория карт данных для технологии (вместо угадывания по имени).
+--- Категории: automation, logistics, mining, production, energy, military, robotics, trains,
+--- chemistry, space, biotech, cryotech, sap-energy, sap-military, alien.
+function api.set_tech_category(tech, category)
+  tech_overrides().category[tech] = category
+end
+
 api.CAPTURABLE = "sap-capturable-nests"
 
 --- Захват ульев SA+ (docs: Глобальные механики → Захват ульев SA+).

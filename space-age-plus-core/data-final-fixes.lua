@@ -75,7 +75,12 @@ local CATEGORY_RULES = {
                     "processing%-unit", "decipher" } },
 }
 
+local overrides = data.raw["mod-data"][sap.TECH_OVERRIDES]
+overrides = overrides and overrides.data or { visible = {}, category = {} }
+for name in pairs(overrides.visible) do NEVER_HIDDEN[name] = true end
+
 local function category_of(name)
+  if overrides.category[name] then return overrides.category[name] end
   for _, rule in ipairs(CATEGORY_RULES) do
     for _, pattern in ipairs(rule[2]) do
       if string.find(name, pattern) then return rule[1] end

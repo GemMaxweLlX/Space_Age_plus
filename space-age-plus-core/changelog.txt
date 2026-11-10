@@ -11,3 +11,4 @@ Date: 2026-11-09
     - Diary entries for vaults and decryption, autonomous base, production deadlock, asteroid hits, first delivery, first Nauvis capture.
     - Tips and tricks section "Space Age+" explaining every mechanic; planet briefings unlock with their discovery.
     - Settings preset: Custom / Casual / Standard / Hardcore.
+    - API for other mods (docs/api.md), with keep_visible and set_tech_category for the hidden tree.

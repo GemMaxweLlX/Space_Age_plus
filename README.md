@@ -58,6 +58,7 @@ FACTORIO=/путь/к/factorio tools/run-tests.sh
 запуск спутника 2, буря Echaris, мусор с платформы, баллон в броне.
 
 ## Документы
+- [API для других модов](docs/api.md) — как подключить свою планету к механикам Space Age+.
 - [English README](README.en.md), описания для mod portal — `docs/portal/`.
 - [Мастер документ v0.3 (Markdown)](docs/design/README.md) — удобно читать на GitHub.
 - [Мастер документ v0.3 (HTML)](docs/space_age_plus_MASTER.html) — оригинал.
