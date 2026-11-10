@@ -24,14 +24,17 @@ sap_settings.PRESETS = {
   casual = preset({
     ["sap-techtree-enabled"] = false, ["sap-exploration-vanilla-planets"] = false,
     ["sap-oxygen-death-speed"] = "slow", ["sap-oxygen-tank-size"] = "large",
+    ["sap-dungeon-size"] = "small", ["sap-dungeon-guardians"] = "few", ["sap-story-recharge-minutes"] = 10,
   }, false),
   standard = preset({
     ["sap-techtree-enabled"] = true, ["sap-exploration-vanilla-planets"] = true,
     ["sap-oxygen-death-speed"] = "medium", ["sap-oxygen-tank-size"] = "medium",
+    ["sap-dungeon-size"] = "normal", ["sap-dungeon-guardians"] = "normal", ["sap-story-recharge-minutes"] = 30,
   }, false),
   hardcore = preset({
     ["sap-techtree-enabled"] = true, ["sap-exploration-vanilla-planets"] = true,
     ["sap-oxygen-death-speed"] = "fast", ["sap-oxygen-tank-size"] = "small",
+    ["sap-dungeon-size"] = "large", ["sap-dungeon-guardians"] = "many", ["sap-story-recharge-minutes"] = 60,
   }, true),
 }
 

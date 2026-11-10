@@ -25,6 +25,16 @@ data:extend({
   { type = "int-setting", name = "sap-llk-chance", setting_type = "runtime-global",
     default_value = 15, minimum_value = 10, maximum_value = 20, order = "c-b" },
 
+  -- Подземелья древней расы
+  { type = "bool-setting", name = "sap-dungeons-enabled", setting_type = "startup",
+    default_value = true, order = "d-0" },
+  { type = "string-setting", name = "sap-dungeon-size", setting_type = "runtime-global",
+    default_value = "normal", allowed_values = { "small", "normal", "large" }, order = "d-1" },
+  { type = "string-setting", name = "sap-dungeon-guardians", setting_type = "runtime-global",
+    default_value = "normal", allowed_values = { "few", "normal", "many" }, order = "d-2" },
+  { type = "int-setting", name = "sap-story-recharge-minutes", setting_type = "runtime-global",
+    default_value = 30, minimum_value = 0, maximum_value = 240, order = "d-3" },
+
   -- Сюжет: экран победы после выбора концовки (игру можно продолжить).
   { type = "bool-setting", name = "sap-story-victory", setting_type = "runtime-global",
     default_value = true, order = "d-a" },

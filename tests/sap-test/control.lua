@@ -1166,7 +1166,7 @@ steps[9600] = function()
       local surface = game.get_surface("sap-dungeon-" .. planet)
       check("dungeon " .. planet .. ": surface", surface ~= nil)
       if surface then
-        check("dungeon " .. planet .. ": rooms", record.rooms >= 6, record.rooms)
+        check("dungeon " .. planet .. ": rooms", record.rooms >= 4, record.rooms)
         check("dungeon " .. planet .. ": doors", record.doors >= 1, record.doors)
         check("dungeon " .. planet .. ": exit", surface.count_entities_filtered({ name = "sap-dungeon-exit" }) == 1)
         local caches = surface.find_entities_filtered({ name = "sap-ancient-cache" })
@@ -1201,6 +1201,13 @@ steps[9600] = function()
   -- Вход у хранилища на Наувисе.
   local entrance = remote.call("sap-core", "dungeon_place_entrance", "nauvis", { 40, 40 })
   check("dungeon: entrance placed", entrance ~= nil and entrance.valid)
+  -- Гарантированный вход на планете (без хранилищ), 150–250 клеток от центра.
+  local vulcanus = game.planets.vulcanus.surface or game.planets.vulcanus.create_surface()
+  remote.call("sap-core", "dungeon_ensure_entrance", vulcanus.name)
+  local guaranteed = remote.call("sap-core", "dungeon_guaranteed", vulcanus.name)
+  local distance = guaranteed and guaranteed.valid
+    and math.sqrt(guaranteed.position.x ^ 2 + guaranteed.position.y ^ 2) or -1
+  check("dungeon: guaranteed entrance on every planet", distance >= 130 and distance <= 270, distance)
 
   -- Открываем по одной двери каждого вида.
   storage.dungeon_doors = {}

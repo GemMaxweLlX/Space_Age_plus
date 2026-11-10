@@ -8,7 +8,7 @@
 --               inherit — Наследие: все технологии древних изучены;
 --               seal    — Печать: подземелья обрушиваются, +25% продуктивности добычи;
 --   decide  — после концовки: вернуться домой (финал, экран победы) или остаться;
---   recharge — остались: узел перезаряжается (RECHARGE_TICKS), затем снова choose —
+--   recharge — остались: узел перезаряжается (настройка sap-story-recharge-minutes), затем снова choose —
 --               доступны концовки, которые ещё не выбраны; после двух разных концовок
 --               открывается секретная — unity (Единство), она всегда последняя;
 --   done    — история завершена (вернулись домой или Единство).
@@ -18,7 +18,12 @@ local dungeon = require("scripts.dungeon")
 
 local story = {}
 
-story.RECHARGE_TICKS = 30 * 60 * 60 -- 30 минут игрового времени
+local sap_settings = require("sap_settings")
+
+--- Перезарядка узла после «остаться», тиков (настройка, по умолчанию 30 минут).
+local function recharge_ticks()
+  return (sap_settings.get("sap-story-recharge-minutes") or 30) * 60 * 60
+end
 
 local NEXUS = "sap-ancient-nexus"
 local FRAME = "sap_story_frame"
@@ -174,9 +179,9 @@ function story.decide(force, decision)
     victory(force)
   elseif decision == "stay" then
     fs.stage = "recharge"
-    fs.ready_at = game.tick + story.RECHARGE_TICKS
+    fs.ready_at = game.tick + recharge_ticks()
     diary.add(force, "story-stay")
-    say(force, { "sap-story.stayed", math.ceil(story.RECHARGE_TICKS / 3600) })
+    say(force, { "sap-story.stayed", math.ceil(recharge_ticks() / 3600) })
   else
     return false
   end

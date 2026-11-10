@@ -401,6 +401,9 @@
 
 | Настройка | Тип | По умолчанию | Диапазон / варианты |
 |---|---|---|---|
+| Стражи в подземельях (`sap-dungeon-guardians`) | runtime-global | normal | few, normal, many |
+| Размер подземелий (`sap-dungeon-size`) | runtime-global | normal | small, normal, large |
+| Подземелья древней расы (`sap-dungeons-enabled`) | startup | True |  |
 | Исследование: ванильные планеты тоже через спутники (`sap-exploration-vanilla-planets`) | startup | True |  |
 | Хардкор: агрессивные мобы на Aquara (`sap-hardcore-aquara-aggressive`) | startup | False |  |
 | Хардкор: постоянная буря на Aquara (`sap-hardcore-aquara-permanent-storm`) | startup | False |  |
@@ -419,6 +422,7 @@
 | Кислород: объём баллона (`sap-oxygen-tank-size`) | runtime-global | medium | small, medium, large |
 | Набор настроек Space Age+ (`sap-preset`) | startup | custom | custom, casual, standard, hardcore |
 | Solaris: лучей коронарной массы (макс.) (`sap-solaris-coronal-rays`) | startup | 3 | 1 … 5 |
+| Перезарядка Древнего узла, мин (`sap-story-recharge-minutes`) | runtime-global | 30 | 0 … 240 |
 | Экран победы после концовки (`sap-story-victory`) | runtime-global | True |  |
 | Технологии: скрытое дерево (`sap-techtree-enabled`) | startup | True |  |
 

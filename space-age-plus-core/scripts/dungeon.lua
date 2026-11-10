@@ -7,6 +7,7 @@
 -- тайники с инопланетными картами (качество растёт с глубиной) и древнее ядро в последнем зале.
 
 local diary = require("scripts.diary")
+local sap_settings = require("sap_settings")
 
 local dungeon = {}
 
@@ -20,6 +21,9 @@ local DOOR, POWER_LOCK, KEY_LOCK = "sap-ancient-door", "sap-ancient-power-lock",
 local CACHE, KEEPER, KEY, TOKEN = "sap-ancient-cache", "sap-ancient-keeper", "sap-ancient-key", "sap-ancient-lock-token"
 local FRAME = "sap_dungeon_frame"
 local QUALITY = { "normal", "uncommon", "rare", "epic", "legendary" }
+local SIZES = { small = 1, normal = 2, large = 3 }
+local GUARDIANS = { few = 0.5, normal = 1, many = 2 }
+local GUARANTEED_MIN, GUARANTEED_MAX = 150, 250 -- гарантированный вход планеты: расстояние от центра
 local CORRIDOR = 1 -- полуширина коридора (ширина 3)
 
 -- Оформление и стиль генерации по планетам.
@@ -45,6 +49,10 @@ THEMES.nivar = { style = "cave", floor = "snow-flat", accent = "snow-crests",
                  guardians = { "sap-frost", "sap-stalagmite", "sap-blizzard" } }
 THEMES["nivar-caves"] = THEMES.nivar
 
+local function enabled()
+  return sap_settings.get("sap-dungeons-enabled") ~= false
+end
+
 local function state()
   storage.dungeons = storage.dungeons or { planets = {}, doors = {}, returns = {} }
   return storage.dungeons
@@ -67,10 +75,11 @@ local function room(rng, x, y, round)
   return { x = x, y = y, half = rng(8, 11), round = round }
 end
 
-local function grid_layout(rng)
+local function grid_layout(rng, size)
+  local n = size + 1 -- сетка 2×2, 3×3 или 4×4
   local rooms, index, edges = {}, {}, {}
-  for gx = 0, 2 do
-    for gy = 0, 2 do
+  for gx = 0, n - 1 do
+    for gy = 0, n - 1 do
       rooms[#rooms + 1] = room(rng, gx * 44, gy * 44)
       index[gx .. "," .. gy] = #rooms
     end
@@ -82,48 +91,49 @@ local function grid_layout(rng)
     local options = {}
     for _, d in pairs({ { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }) do
       local nx, ny = cell[1] + d[1], cell[2] + d[2]
-      if nx >= 0 and nx <= 2 and ny >= 0 and ny <= 2 and not visited[nx .. "," .. ny] then
+      if nx >= 0 and nx < n and ny >= 0 and ny < n and not visited[nx .. "," .. ny] then
         options[#options + 1] = { nx, ny }
       end
     end
     if #options == 0 then
       table.remove(stack)
     else
-      local n = options[rng(1, #options)]
-      visited[n[1] .. "," .. n[2]] = true
-      edges[#edges + 1] = { index[cell[1] .. "," .. cell[2]], index[n[1] .. "," .. n[2]] }
-      stack[#stack + 1] = n
+      local next_cell = options[rng(1, #options)]
+      visited[next_cell[1] .. "," .. next_cell[2]] = true
+      edges[#edges + 1] = { index[cell[1] .. "," .. cell[2]], index[next_cell[1] .. "," .. next_cell[2]] }
+      stack[#stack + 1] = next_cell
     end
   end
   return rooms, edges
 end
 
-local function chain_layout(rng)
+local function chain_layout(rng, size)
   local rooms, edges = {}, {}
-  for i = 0, 5 do
+  for i = 0, 1 + 2 * size do -- 4, 6 или 8 залов
     rooms[#rooms + 1] = room(rng, i * 44, rng(-12, 12))
     if i > 0 then edges[#edges + 1] = { i, i + 1 } end
   end
   return rooms, edges
 end
 
-local function ring_layout(rng)
+local function ring_layout(rng, size)
+  local count = 2 + 2 * size -- 4, 6 или 8 залов в кольце
   local rooms, edges = {}, {}
-  for i = 0, 5 do
-    local angle = i / 6 * 2 * math.pi
+  for i = 0, count - 1 do
+    local angle = i / count * 2 * math.pi
     rooms[#rooms + 1] = room(rng, math.floor(math.cos(angle) * 64), math.floor(math.sin(angle) * 64))
     if i > 0 then edges[#edges + 1] = { i, i + 1 } end
   end
   rooms[#rooms + 1] = room(rng, 0, 0)
   rooms[#rooms].half = 13
-  edges[#edges + 1] = { 6, 7 } -- центр — самый глубокий зал, вход в него с дальнего конца кольца
+  edges[#edges + 1] = { count, count + 1 } -- центр — самый глубокий зал, вход в него с дальнего конца кольца
   return rooms, edges
 end
 
-local function cave_layout(rng)
+local function cave_layout(rng, size)
   local rooms, edges = { room(rng, 0, 0, true) }, {}
   local tries = 0
-  while #rooms < 7 and tries < 200 do
+  while #rooms < 2 + 2 * size + (size == 3 and 2 or 1) and tries < 300 do
     tries = tries + 1
     local from = rng(1, #rooms)
     local angle = rng() * 2 * math.pi
@@ -256,7 +266,8 @@ function dungeon.generate(planet)
   local generator = game.create_random_generator(seed_for(planet))
   local rng = function(a, b) if a then return generator(a, b) end return generator() end
 
-  local rooms, edges = LAYOUTS[theme.style](rng)
+  local size = SIZES[sap_settings.get("sap-dungeon-size")] or 2
+  local rooms, edges = LAYOUTS[theme.style](rng, size)
   local depth, parent = depths(rooms, edges)
 
   -- Без автоплейса: всё вне вырезанных залов — пустота (out-of-map), без врагов и ресурсов.
@@ -309,7 +320,8 @@ function dungeon.generate(planet)
     if depth[i] > deepest then deepest, deepest_room = depth[i], i end
     if i > 1 then
       local d = depth[i]
-      for _ = 1, d + 1 do
+      local multiplier = GUARDIANS[sap_settings.get("sap-dungeon-guardians")] or 1
+      for _ = 1, math.max(1, math.floor((d + 1) * multiplier + 0.5)) do
         place(surface, guardians[rng(1, #guardians)], r.x + rng(-r.half + 3, r.half - 3), r.y + rng(-r.half + 3, r.half - 3),
               "enemy", 8)
       end
@@ -402,8 +414,38 @@ local function check_cores(s)
   end
 end
 
+--- Гарантированный вход: у каждой планеты, куда пришёл игрок, есть хотя бы один вход
+--- (в 150–250 клетках от центра), даже если хранилищ нет (например, скрытое дерево выключено).
+function dungeon.ensure_entrance(surface)
+  local s = state()
+  s.ensured = s.ensured or {}
+  local key = surface.name
+  if s.ensured[key] or not surface.planet or not enabled() then return end
+  s.ensured_tries = s.ensured_tries or {}
+  local tries = (s.ensured_tries[key] or 0) + 1
+  s.ensured_tries[key] = tries
+  local generator = game.create_random_generator((seed_for(key) + tries * 7919) % 4294967295)
+  local angle = generator() * 2 * math.pi
+  local distance = GUARANTEED_MIN + generator() * (GUARANTEED_MAX - GUARANTEED_MIN)
+  local target = { math.floor(math.cos(angle) * distance), math.floor(math.sin(angle) * distance) }
+  surface.request_to_generate_chunks(target, 1)
+  surface.force_generate_chunk_requests()
+  local entrance = dungeon.place_entrance(surface, target)
+  if entrance or tries >= 8 then
+    s.ensured[key] = true
+    s.guaranteed = s.guaranteed or {}
+    s.guaranteed[key] = entrance
+  else
+    s.ensured[key] = nil
+  end
+end
+
 function dungeon.on_tick()
   local s = state()
+  for _, player in pairs(game.connected_players) do
+    local surface = player.surface
+    if surface.planet and not (s.ensured and s.ensured[surface.name]) then dungeon.ensure_entrance(surface) end
+  end
   check_cores(s)
   for i = #s.doors, 1, -1 do
     local d = s.doors[i]
@@ -433,6 +475,7 @@ end
 -- Вход и выход ----------------------------------------------------------------------------
 
 function dungeon.place_entrance(surface, near)
+  if not enabled() then return nil end
   local position = surface.find_non_colliding_position(ENTRANCE, near, 16, 1)
   if not position then return nil end
   local entrance = surface.create_entity({ name = ENTRANCE, position = position, force = "neutral" })

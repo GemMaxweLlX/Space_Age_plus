@@ -71,7 +71,10 @@ do
       add_pack(nexus_tech, pack)
       table.insert(nexus_recipe.ingredients, { type = "item", name = pack, amount = 10 })
     end
-    table.insert(nexus_recipe.ingredients, { type = "item", name = "sap-ancient-core", amount = math.max(1, planets) })
+    -- Без подземелий ядер нет: узел строится из колб.
+    if sap_settings.get("sap-dungeons-enabled") ~= false then
+      table.insert(nexus_recipe.ingredients, { type = "item", name = "sap-ancient-core", amount = math.max(1, planets) })
+    end
   end
 end
 

@@ -137,6 +137,10 @@ remote.add_interface("sap-core", {
   dungeon_place_entrance = function(surface_name, position)
     return dungeon.place_entrance(game.get_surface(surface_name), position)
   end,
+  dungeon_ensure_entrance = function(surface_name) dungeon.ensure_entrance(game.get_surface(surface_name)) end,
+  dungeon_guaranteed = function(surface_name)
+    return storage.dungeons and storage.dungeons.guaranteed and storage.dungeons.guaranteed[surface_name]
+  end,
   dungeon_enter = function(player_index, entrance) dungeon.enter(game.get_player(player_index), entrance) end,
   dungeon_leave = function(player_index) dungeon.leave(game.get_player(player_index)) end,
   dungeon_doors = function(planet)
