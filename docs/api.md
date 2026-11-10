@@ -86,6 +86,34 @@ only that food, produce `product` and turn hostile again when starved. Nests mus
 | `sap.upgrade({ base, name, tint, change, ingredients, time, result_count, tech })` | Builds an improved copy of a vanilla building, armor or gun: entity, item, recipe, and adds the recipe to the technology `tech.name` (created on first use with `tech.icon`, `tech.count`, `tech.prerequisites`, `tech.science`). `change(entity, item)` edits the copy. |
 | `sap.tip(name, order, tag, trigger?)` | An entry in the "Space Age+" section of Tips and tricks. Text from `[tips-and-tricks-item-name]` and `[tips-and-tricks-item-description]` in your locale. `trigger` is a TipTrigger (nil = shown from the start). |
 
+### Dungeons, planet cores and the story
+
+Every planet a player visits gets an ancient dungeon. Without registration a planet gets the
+Nauvis layout, a generic ancient core and a generic diary chapter.
+
+```lua
+sap.register_dungeon("myplanet", {
+  style = "cave",              -- "grid", "chain", "ring", "flooded" or "cave"
+  floor = "my-floor-tile",     -- unknown tiles fall back to the Nauvis floor
+  accent = "my-edge-tile",     -- optional: room edges
+  hazard = "my-lava-tile",     -- optional: lava/water inside rooms (chain and flooded styles)
+  guardians = { "my-unit", "big-biter" },  -- missing prototypes are skipped
+  trap = "frost",              -- optional: "fire", "electric", "poison", "frost"
+})
+sap.register_planet_core("myplanet", {
+  tint = { r = 1, g = 0.5, b = 0 },
+  modifier = "worker_robots_storage_bonus",  -- a LuaForce field
+  value = 1,
+})
+sap.register_story_chapter("myplanet")
+```
+
+| Function | What it does |
+|---|---|
+| `sap.register_dungeon(planet, def)` | Layout style, tiles, guardians and trap kind of the planet's dungeon. |
+| `sap.register_planet_core(planet, def)` | The planet's own core (`sap-ancient-core-<planet>`): while it lies in an Ancient pedestal or the Ancient nexus, the force gets `value` added to the LuaForce field `modifier`. The nexus then needs this core too. Describe the bonus in `[sap-core-bonus]` `<modifier>=...` if the field is not one of the built-in ones. |
+| `sap.register_story_chapter(planet)` | When the planet's core is taken, the diary gets the entry `story-core-<planet>`; put its text in `[sap-diary-title]` and `[sap-diary-text]`. |
+
 ## Runtime (`control.lua`)
 
 ### Settings with the preset applied
@@ -138,7 +166,9 @@ may change.
   - запрет доставки — `register_no_delivery`;
   - конденсация — `register_condensing_generator`;
   - улучшенные копии построек — `upgrade`;
-  - подсказки — `tip`.
+  - подсказки — `tip`;
+  - подземелье своей планеты, её ядро и глава истории — `register_dungeon`,
+    `register_planet_core`, `register_story_chapter`.
 - **Стадия control:**
   - настройки с учётом набора — `sap_settings.get`;
   - записи дневника — `remote.call("sap-diary", "add", ...)`.

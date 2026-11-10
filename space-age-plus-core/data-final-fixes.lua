@@ -87,11 +87,20 @@ do
     { "aquara", { r = 0.2, g = 0.9, b = 0.8 }, "character_running_speed_modifier", 0.2 },
     { "nivar", { r = 0.85, g = 0.95, b = 1 }, "bulk_inserter_capacity_bonus", 1 },
   }
+  -- Ядра других модов (api.register_planet_core) — после встроенных, по имени планеты.
+  local defs = data.raw["mod-data"][sap.CORE_DEFS]
+  local extra = {}
+  for planet in pairs(defs and defs.data or {}) do extra[#extra + 1] = planet end
+  table.sort(extra)
+  for _, planet in pairs(extra) do
+    local def = defs.data[planet]
+    CORES[#CORES + 1] = { planet, def.tint or { r = 1, g = 1, b = 1 }, def.modifier, def.value, true }
+  end
   local registry = {}
   local order = 0
   for _, c in pairs(CORES) do
     local planet, tint, modifier, value = c[1], c[2], c[3], c[4]
-    if data.raw.planet[planet] then
+    if data.raw.planet[planet] or data.raw["space-location"][planet] or c[5] then
       order = order + 1
       local item = "sap-ancient-core-" .. planet
       data:extend({ {

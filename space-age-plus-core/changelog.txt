@@ -23,3 +23,4 @@ Date: 2026-11-09
     - Diary entries for dungeons: first door, the Keeper, the Warden, floor traps, death in a dungeon, a new expedition, the first core on a pedestal.
     - Achievements: enter a dungeon, defeat the Warden, defeat it without taking damage, collect every planet core, each ending, going home, and all four endings in one game.
     - Multiplayer: dungeon messages go to the forces inside, players who left the game no longer block a new expedition (they are moved to the surface), removed players are cleaned up, and every force is told when another force seals the nexus. Tests with several forces: traps, core bonuses and story progress stay per force.
+    - API: register_dungeon, register_planet_core and register_story_chapter let other planet mods add their own dungeon style, planet core with a bonus, and diary chapter (docs/api.md).

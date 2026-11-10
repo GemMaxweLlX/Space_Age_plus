@@ -88,9 +88,20 @@ local function state()
 end
 
 local function theme_of(planet)
-  local t = THEMES[planet] or THEMES.nauvis
+  local registered = prototypes.mod_data["sap-dungeon-themes"]
+  local source = (registered and registered.data[planet]) or THEMES[planet] or THEMES.nauvis
+  -- Тема другого мода могла назвать несуществующие плитки: такие заменяются плитками Наувиса.
+  local function tile(name, fallback)
+    if name and prototypes.tile[name] then return name end
+    return fallback
+  end
+  local t = {
+    style = source.style or "grid", trap = source.trap,
+    floor = tile(source.floor, THEMES.nauvis.floor),
+    accent = tile(source.accent, nil), hazard = tile(source.hazard, nil),
+  }
   local guardians = {}
-  for _, name in pairs(t.guardians) do
+  for _, name in pairs(source.guardians or {}) do
     if prototypes.entity[name] then guardians[#guardians + 1] = name end
   end
   if #guardians == 0 then guardians = { "medium-biter" } end
@@ -301,7 +312,7 @@ function dungeon.generate(planet)
   local rng = function(a, b) if a then return generator(a, b) end return generator() end
 
   local size = SIZES[sap_settings.get("sap-dungeon-size")] or 2
-  local rooms, edges = LAYOUTS[theme.style](rng, size)
+  local rooms, edges = (LAYOUTS[theme.style] or grid_layout)(rng, size)
   local depth, parent = depths(rooms, edges)
 
   -- Без автоплейса: всё вне вырезанных залов — пустота (out-of-map), без врагов и ресурсов.
@@ -377,7 +388,7 @@ function dungeon.generate(planet)
   for _ = 1, 2 do place(surface, "sap-alien-guardian", final.x + rng(-6, 6), final.y + rng(-6, 6), "enemy", 8) end
 
   -- Ловушки: в коридорах и залах (кроме первого), вид — по стилю планеты.
-  local trap_kind = TRAPS[theme.style] or "electric"
+  local trap_kind = theme.trap or TRAPS[theme.style] or "electric"
   record.trap_kind = trap_kind
   for i, r in pairs(rooms) do
     if i > 1 then

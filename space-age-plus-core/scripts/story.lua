@@ -90,7 +90,9 @@ function story.on_core_taken(force, planet)
   local taken = s.cores[force.index]
   if taken[planet] then return end
   taken[planet] = true
-  diary.add(force, KNOWN_PLANETS[planet] and ("story-core-" .. planet) or "story-core-other")
+  local chapters = prototypes.mod_data["sap-story-chapters"]
+  local own = KNOWN_PLANETS[planet] or (chapters and chapters.data[planet])
+  diary.add(force, own and ("story-core-" .. planet) or "story-core-other")
   local n = 0
   for _ in pairs(taken) do n = n + 1 end
   if n >= 3 then diary.add(force, "story-pattern") end

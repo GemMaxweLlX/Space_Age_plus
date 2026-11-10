@@ -1378,6 +1378,28 @@ steps[10060] = function()
         storage.mp.a.mining_drill_productivity_bonus .. " vs " .. storage.mp.expected_a)
 end
 
+-- API для других модов: подземелье, ядро и глава истории «чужой» планеты (tests/sap-test/data.lua).
+steps[10100] = function()
+  local record = remote.call("sap-core", "dungeon_generate", "sap-test-moon")
+  local surface = game.get_surface(record.surface)
+  check("api: dungeon of a registered planet", surface ~= nil)
+  check("api: dungeon uses the registered style (ring)", record.rooms == 5 or record.rooms == 7 or record.rooms == 9,
+        record.rooms)
+  check("api: dungeon uses the registered floor", surface.get_tile(record.start.x, record.start.y).name == "dirt-1",
+        surface.get_tile(record.start.x, record.start.y).name)
+  check("api: unknown tiles and units are skipped", surface.count_entities_filtered({ name = "small-biter" }) > 0)
+  check("api: dungeon trap kind", remote.call("sap-core", "dungeon_record", "sap-test-moon").trap_kind == "frost")
+  local entry = prototypes.mod_data["sap-ancient-cores"].data["sap-test-moon"]
+  check("api: planet core registered", entry ~= nil and prototypes.item[entry.item] ~= nil
+        and entry.modifier == "character_running_speed_modifier")
+  remote.call("sap-core", "test_core_taken", "sap-mp-b", "sap-test-moon")
+  local found = false
+  for _, k in pairs(remote.call("sap-diary", "entries", "sap-mp-b")) do
+    if k == "story-core-sap-test-moon" then found = true end
+  end
+  check("api: story chapter of a registered planet", found)
+end
+
 -- Сюжет и концовки ------------------------------------------------------------------------
 local function has_entry(force_name, key)
   for _, k in pairs(remote.call("sap-diary", "entries", force_name)) do if k == key then return true end end
@@ -1405,12 +1427,12 @@ steps[11700] = function()
   local registry = prototypes.mod_data["sap-ancient-cores"].data
   local planets = 0
   for planet, entry in pairs(registry) do
-    planets = planets + 1
+    if planet ~= "sap-test-moon" then planets = planets + 1 end -- ядро тестового мода (API)
     check("cores: item for " .. planet, prototypes.item[entry.item] ~= nil)
   end
   check("cores: one per planet with a pack", planets == n, planets .. " vs " .. n)
   check("cores: nexus holds a core of every planet",
-        prototypes.entity["sap-ancient-nexus"].get_inventory_size(defines.inventory.chest) == planets)
+        prototypes.entity["sap-ancient-nexus"].get_inventory_size(defines.inventory.chest) == planets + 1)
   -- Забираем ядра из трёх подземелий.
   storage.story_taken = 0
   for _, planet in pairs({ "nauvis", "vulcanus", "fulgora" }) do

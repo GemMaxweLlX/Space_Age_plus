@@ -412,4 +412,43 @@ function api.capturable_nests(def)
   })
 end
 
+-- Подземелья, ядра и сюжет -----------------------------------------------------------------
+
+local function mod_data(name)
+  local proto = data.raw["mod-data"] and data.raw["mod-data"][name]
+  if not proto then
+    data:extend({ { type = "mod-data", name = name, data = {} } })
+    proto = data.raw["mod-data"][name]
+  end
+  return proto.data
+end
+
+api.DUNGEON_THEMES = "sap-dungeon-themes"
+api.CORE_DEFS = "sap-core-defs"
+api.STORY_CHAPTERS = "sap-story-chapters"
+
+--- Подземелье планеты: планировка и оформление (иначе — как у Наувиса).
+--- @param def table {
+---   style = "grid" | "chain" | "ring" | "flooded" | "cave",
+---   floor = "tile", accent = "tile"|nil (край залов), hazard = "tile"|nil (лава/вода в залах),
+---   guardians = { "unit", ... } (стражи залов; несуществующие пропускаются),
+---   trap = "fire" | "electric" | "poison" | "frost" | nil (по умолчанию — по стилю) }
+function api.register_dungeon(planet, def)
+  mod_data(api.DUNGEON_THEMES)[planet] = def
+end
+
+--- Ядро планеты и его бонус команде, пока ядро в пьедестале или узле.
+--- modifier — имя поля LuaForce (например "worker_robots_speed_modifier"), value — прибавка.
+--- Описание бонуса в окне — из [sap-core-bonus] <modifier> вашей локали (для своих полей).
+--- @param def table { tint = color, modifier = "...", value = number }
+function api.register_planet_core(planet, def)
+  mod_data(api.CORE_DEFS)[planet] = def
+end
+
+--- Глава истории для планеты: когда ядро забрано, в дневник добавляется запись
+--- "story-core-<planet>" (текст — в [sap-diary-title] и [sap-diary-text] вашей локали).
+function api.register_story_chapter(planet)
+  mod_data(api.STORY_CHAPTERS)[planet] = true
+end
+
 return api

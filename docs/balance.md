@@ -425,7 +425,7 @@
 | Кислород: радиус пузыря распределителя (`sap-oxygen-distributor-radius`) | startup | 16 | 8 … 64 |
 | Кислород: включить систему (`sap-oxygen-enabled`) | runtime-global | True |  |
 | Кислород: объём баллона (`sap-oxygen-tank-size`) | runtime-global | medium | small, medium, large |
-| Набор настроек Space Age+ (`sap-preset`) | startup | custom | custom, casual, standard, hardcore |
+| Набор настроек Space Age+ (`sap-preset`) | startup | standard | custom, casual, standard, hardcore |
 | Solaris: лучей коронарной массы (макс.) (`sap-solaris-coronal-rays`) | startup | 3 | 1 … 5 |
 | Перезарядка Древнего узла, мин (`sap-story-recharge-minutes`) | runtime-global | 30 | 0 … 240 |
 | Экран победы после концовки (`sap-story-victory`) | runtime-global | True |  |
@@ -477,6 +477,8 @@
 | oxygen.lua | `REFILL_PER_SECOND` | 20 | Сколько секунд дыхания восполняется за секунду внутри пузыря. |
 | oxygen.lua | `RESPAWN_GRACE_TICKS` | 3600 | Без этого на планете без воздуха возрождение заканчивалось бы новой смертью. |
 | story.lua | `UNITY_AFTER` | 2 | сколько разных концовок нужно для секретной |
+| story.lua | `ESCORT` | 4 | союзных стражей у узла после Пробуждения |
+| story.lua | `GIFT_TICKS` | 108000 | дар древних раз в 30 минут |
 | techtree.lua | `PACKS_PER_USE` | 10 |  |
 | techtree.lua | `OPTIONS_DECIPHER` | 3 |  |
 | techtree.lua | `OPTIONS_LLK` | 2 |  |
