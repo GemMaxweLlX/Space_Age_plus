@@ -12,3 +12,4 @@ Date: 2026-11-09
     - Tips and tricks section "Space Age+" explaining every mechanic; planet briefings unlock with their discovery.
     - Settings preset: Custom / Casual / Standard / Hardcore.
     - API for other mods (docs/api.md), with keep_visible and set_tech_category for the hidden tree.
+    - Planet science packs: each made only on its planet, needed by the Space Age+ technologies tied to it.

@@ -29,3 +29,15 @@ data:extend({
 -- Подсказки (окно «Советы и подсказки», раздел Space Age+).
 sap.tip("sap-solaris-briefing", "s-a", "[planet=solaris]", { type = "research", technology = "sap-planet-discovery-solaris" })
 sap.tip("sap-solaris-heat", "s-b", "[item=sap-radiator]", { type = "change-surface", surface = "solaris" })
+
+-- Термическая колба Solaris: для технологий Solaris.
+sap.planet_science_pack({
+  name = "sap-thermal-science-pack", icon = "__space-age__/graphics/icons/metallurgic-science-pack.png",
+  tint = { r = 1, g = 0.8, b = 0.3, a = 1 }, order = "f", pressure = 50, categories = { "metallurgy" },
+  ingredients = {
+    { type = "item", name = "sap-heat-resistant-alloy", amount = 2 }, { type = "item", name = "sap-thermite", amount = 1 },
+    { type = "fluid", name = "sap-molten-metal", amount = 50 },
+  },
+  trigger = { type = "craft-item", item = "sap-heat-resistant-alloy" }, prerequisites = { "sap-planet-discovery-solaris" },
+  discovery_tech = "sap-planet-discovery-solaris",
+})

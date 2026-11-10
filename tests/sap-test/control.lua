@@ -668,7 +668,8 @@ steps[3000] = function()
       if not cpos then goto next_shift end
       -- Подальше от зон Механитов: их патрули законно находят игрока и в костюме.
       local near_zone = surface.count_entities_filtered({
-        name = { "sap-control-server", "sap-control-server-heavy" }, position = cpos, radius = 90, limit = 1,
+        name = { "sap-control-server", "sap-control-server-heavy", "sap-alien-guardian", "sap-alien-vault" },
+        position = cpos, radius = 90, limit = 1,
       }) > 0
       if not near_zone and (not first_pos or ((cpos.x - first_pos.x) ^ 2 + (cpos.y - first_pos.y) ^ 2) > 60 ^ 2) then
         break
@@ -676,7 +677,7 @@ steps[3000] = function()
       cpos = nil
       ::next_shift::
     end
-    cpos = cpos or fallback
+    cpos = cpos or fallback or clear_spot(surface, { 0, -300 - i * 120 })
     first_pos = first_pos or cpos
     local character = surface.create_entity({ name = "character", position = cpos, force = force })
     character.get_inventory(defines.inventory.character_armor).insert({ name = armor, count = 1 })
@@ -685,7 +686,8 @@ steps[3000] = function()
     local distance = armor == "sap-stealth-suit" and 12 or 4
     local unit = surface.create_entity({ name = armor == "sap-stealth-suit" and "sap-annihilator" or "sap-sentinel",
                                          position = { cpos.x + distance, cpos.y }, force = "enemy" })
-    unit.commandable.set_command({ type = defines.command.attack, target = character })
+    unit.commandable.set_command({ type = defines.command.attack, target = character,
+                                   distraction = defines.distraction.none })
     storage["stealth_" .. i] = character
   end
   -- Взлом
@@ -721,13 +723,45 @@ steps[3120] = function()
   check("hacking: EMP grenade turns mechanites", hacked > 0, hacked)
 end
 
+-- Без костюма: следим за здоровьем всё время теста; если враг погиб (например, от молнии
+-- бури), ставим нового рядом.
+for tick = 3030, 3870, 30 do
+  steps[tick] = function()
+    local plain = storage.stealth_2
+    if not (plain and plain.valid) then return end
+    if plain.health < plain.max_health then storage.plain_was_hit = true end
+    local attacker = storage.stealth_unit_2
+    if not (attacker and attacker.valid) then
+      local surface = plain.surface
+      local pos = surface.find_non_colliding_position("sap-sentinel", { plain.position.x + 4, plain.position.y }, 8, 0.5)
+      if pos then
+        attacker = surface.create_entity({ name = "sap-sentinel", position = pos, force = "enemy" })
+        attacker.commandable.set_command({ type = defines.command.attack, target = plain,
+                                           distraction = defines.distraction.none })
+        storage.stealth_unit_2 = attacker
+      end
+    end
+  end
+end
+
 steps[3900] = function()
   local stealthy, plain = storage.stealth_1, storage.stealth_2
   local s_hp = stealthy and stealthy.valid and stealthy.health or 0
   local p_hp = plain and plain.valid and plain.health or 0
   log(string.format("SAP-TEST INFO stealth health %.0f, plain health %.0f", s_hp, p_hp))
-  check("stealth: suit keeps mechanites away", stealthy and stealthy.valid and s_hp == stealthy.max_health, s_hp)
-  check("stealth: without suit gets attacked", not (plain and plain.valid) or p_hp < plain.max_health, p_hp)
+  -- Молния бури Echaris (электричество без источника) бьёт и по игроку в костюме — это не
+  -- провал стелса. Провал — урон от Механита.
+  local death = storage.stealth_death
+  local by_lightning = death and death.cause == nil and death.damage == "electric"
+  if by_lightning then log("SAP-TEST INFO stealth character killed by storm lightning: check skipped") end
+  check("stealth: suit keeps mechanites away", by_lightning or (stealthy and stealthy.valid and s_hp == stealthy.max_health),
+        serpent.line(death) .. " hp " .. s_hp)
+  local gap = (stealthy and stealthy.valid and plain and plain.valid)
+    and math.sqrt((stealthy.position.x - plain.position.x) ^ 2 + (stealthy.position.y - plain.position.y) ^ 2) or -1
+  local attacker = storage.stealth_unit_2
+  check("stealth: without suit gets attacked", not (plain and plain.valid) or p_hp < plain.max_health or storage.plain_was_hit,
+        string.format("hp %s, characters %.0f apart, attacker %s", p_hp, gap,
+          attacker and attacker.valid and (attacker.force.name .. " " .. serpent.line(attacker.position)) or "gone"))
 end
 
 -- Тики 4300+: капсула доставки на Solaris -----------------------------------------
@@ -1144,6 +1178,8 @@ end)
 
 script.on_event(defines.events.on_entity_died, function(event)
   if storage.stealth_1 and event.entity == storage.stealth_1 then
+    storage.stealth_death = { cause = event.cause and event.cause.valid and event.cause.name or nil,
+                              damage = event.damage_type and event.damage_type.name }
     log("SAP-TEST INFO stealth character killed by " .. tostring(event.cause and event.cause.valid and event.cause.name)
         .. " damage " .. tostring(event.damage_type and event.damage_type.name) .. " at tick " .. event.tick)
   end

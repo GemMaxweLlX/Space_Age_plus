@@ -9,3 +9,4 @@ Date: 2026-11-09
     - Scorch and Magmar nests, solitary Molten; aggressive creatures hardcore setting.
     - Improved delivery capsule: cargo pods cannot land on Solaris without it (S4).
     - Volcanic vents with volcanic gas replace sulfuric acid geysers; molten metal for the heat-resistant alloy.
+    - Planet science packs: each made only on its planet, needed by the Space Age+ technologies tied to it.

@@ -10,3 +10,4 @@ Date: 2026-11-09
     - Hardcore: no platform delivery (cargo pods return to the hub).
     - Insulating foundation, insulated walls (slower freezing in cryostorms), cave armor (+30% run speed in caves).
     - Cryostorms wake cave nests (Frost attacks buildings in the caves); Nivar recipes need Aquilo lithium.
+    - Planet science packs: each made only on its planet, needed by the Space Age+ technologies tied to it.

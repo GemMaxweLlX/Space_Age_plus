@@ -250,6 +250,50 @@ function api.set_tech_category(tech, category)
   tech_overrides().category[tech] = category
 end
 
+api.PLANET_PACKS = "sap-planet-packs"
+
+--- Колба планеты: делается только на своей планете (по давлению атмосферы), открывается
+--- триггером (как ванильные колбы планет), принимается всеми лабораториями. Технологии
+--- Space Age+ (имена sap-*), зависящие от discovery_tech, а также перечисленные в techs,
+--- требуют эту колбу (добавляет data-final-fixes ядра, вместе с технологией колбы в требованиях).
+--- @param def table {
+---   name, icon, tint, order, pressure, categories, ingredients, count, energy, spoil_hours,
+---   trigger = { type = "craft-item", item = "..." }, prerequisites = { ... },
+---   discovery_tech = "planet-discovery-..." | nil, techs = { "sap-..." } | nil }
+function api.planet_science_pack(def)
+  local icons = { { icon = def.icon, icon_size = 64, tint = def.tint } }
+  local item = {
+    type = "item", name = def.name, icons = icons, subgroup = "science-pack",
+    order = "z[sap]-" .. def.order, stack_size = 200, weight = 1000, -- 1 кг
+    localised_description = { "item-description.science-pack" },
+  }
+  if def.spoil_hours then
+    item.spoil_ticks = def.spoil_hours * 60 * 60 * 60
+    item.spoil_result = "spoilage"
+  end
+  data:extend({
+    item,
+    {
+      type = "recipe", name = def.name, categories = def.categories, enabled = false,
+      energy_required = def.energy or 10, ingredients = def.ingredients,
+      results = { { type = "item", name = def.name, amount = def.count or 2 } },
+      surface_conditions = def.pressure and { { property = "pressure", min = def.pressure, max = def.pressure } } or nil,
+      allow_productivity = true,
+    },
+    {
+      type = "technology", name = def.name, icons = { { icon = def.icon, icon_size = 64, tint = def.tint } },
+      effects = { { type = "unlock-recipe", recipe = def.name } },
+      prerequisites = def.prerequisites, research_trigger = def.trigger,
+    },
+  })
+  local proto = data.raw["mod-data"] and data.raw["mod-data"][api.PLANET_PACKS]
+  if not proto then
+    data:extend({ { type = "mod-data", name = api.PLANET_PACKS, data = {} } })
+    proto = data.raw["mod-data"][api.PLANET_PACKS]
+  end
+  proto.data[def.name] = { discovery_tech = def.discovery_tech, techs = def.techs }
+end
+
 api.CAPTURABLE = "sap-capturable-nests"
 
 --- Захват ульев SA+ (docs: Глобальные механики → Захват ульев SA+).

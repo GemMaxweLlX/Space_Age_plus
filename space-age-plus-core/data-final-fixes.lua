@@ -9,6 +9,58 @@ if data.raw.technology["sap-planet-discovery-solaris"] then
   table.insert(data.raw.technology["sap-high-grade-fluids"].prerequisites, "sap-planet-discovery-solaris")
 end
 
+-- Колбы планет (prototypes/science.lua и модули планет) -----------------------------------
+-- Технологии sap-*, зависящие от технологии открытия планеты (или перечисленные явно), требуют
+-- колбу этой планеты и её технологию в требованиях. Все лаборатории принимают новые колбы.
+do
+  local packs = data.raw["mod-data"][sap.PLANET_PACKS]
+  local memo = {}
+  local function depends_on(name, target, seen)
+    if name == target then return true end
+    memo[target] = memo[target] or {}
+    if memo[target][name] ~= nil then return memo[target][name] end
+    seen = seen or {}
+    if seen[name] then return false end
+    seen[name] = true
+    local tech = data.raw.technology[name]
+    local result = false
+    for _, pre in pairs(tech and tech.prerequisites or {}) do
+      if depends_on(pre, target, seen) then result = true break end
+    end
+    memo[target][name] = result
+    return result
+  end
+  local function add_pack(tech, pack)
+    if not (tech.unit and tech.unit.ingredients) or tech.name == pack then return end
+    for _, ingredient in pairs(tech.unit.ingredients) do
+      if (ingredient[1] or ingredient.name) == pack then return end
+    end
+    table.insert(tech.unit.ingredients, { pack, 1 })
+    tech.prerequisites = tech.prerequisites or {}
+    local has = false
+    for _, pre in pairs(tech.prerequisites) do if pre == pack then has = true end end
+    if not has then table.insert(tech.prerequisites, pack) end
+  end
+  for pack, rule in pairs(packs and packs.data or {}) do
+    for _, name in pairs(rule.techs or {}) do
+      if data.raw.technology[name] then add_pack(data.raw.technology[name], pack) end
+    end
+    if rule.discovery_tech and data.raw.technology[rule.discovery_tech] then
+      for name, tech in pairs(data.raw.technology) do
+        if string.sub(name, 1, 4) == "sap-" and name ~= rule.discovery_tech and name ~= pack
+            and not depends_on(rule.discovery_tech, name) and depends_on(name, rule.discovery_tech) then
+          add_pack(tech, pack)
+        end
+      end
+    end
+    for _, lab in pairs(data.raw.lab) do
+      local has = false
+      for _, input in pairs(lab.inputs) do if input == pack then has = true end end
+      if not has then table.insert(lab.inputs, pack) end
+    end
+  end
+end
+
 -- Ванильные планеты тоже открываются через спутники, если включена настройка.
 if sap_settings.get("sap-exploration-vanilla-planets") then
   for _, planet in pairs({ "vulcanus", "fulgora", "gleba", "aquilo" }) do

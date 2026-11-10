@@ -7,3 +7,4 @@ Date: 2026-11-09
     - Storms with tornadoes; storm shield and storm anchor.
     - Ripple and Surf nests, solitary Abyss; aggressive creatures and permanent storm hardcore settings.
     - Oxygen collector with dehumidifier.
+    - Planet science packs: each made only on its planet, needed by the Space Age+ technologies tied to it.
