@@ -20,7 +20,13 @@ dungeon.TICK_INTERVAL = 60
 local ENTRANCE, EXIT = "sap-dungeon-entrance", "sap-dungeon-exit"
 local DOOR, POWER_LOCK, KEY_LOCK = "sap-ancient-door", "sap-ancient-power-lock", "sap-ancient-key-lock"
 local CACHE, KEEPER, KEY, TOKEN = "sap-ancient-cache", "sap-ancient-keeper", "sap-ancient-key", "sap-ancient-lock-token"
+local TRAP, WARDEN = "sap-ancient-trap", "sap-ancient-warden"
 local FRAME = "sap_dungeon_frame"
+dungeon.TRAP_INTERVAL = 10
+-- Ловушки по стилю: урон и эффект.
+local TRAPS = { grid = "electric", chain = "fire", ring = "electric", flooded = "poison", cave = "frost" }
+local TRAP_COOLDOWN = 120
+local TRAP_DAMAGE = { electric = 80, fire = 60, poison = 25, frost = 40 }
 local QUALITY = { "normal", "uncommon", "rare", "epic", "legendary" }
 local SIZES = { small = 1, normal = 2, large = 3 }
 local GUARDIANS = { few = 0.5, normal = 1, many = 2 }
@@ -245,12 +251,14 @@ local function place(surface, name, x, y, force, radius)
   return e
 end
 
-local function fill_cache(cache, depth, final, planet)
+local function fill_cache(cache, depth, final, planet, run)
   local inventory = cache.get_inventory(defines.inventory.chest)
-  local quality = QUALITY[math.min(#QUALITY, depth + (final and 2 or 0))]
-  inventory.insert({ name = "sap-data-card-alien", count = final and 2 or 1, quality = quality })
-  inventory.insert({ name = "sap-alien-data", count = final and 2 or 1 })
-  if final then inventory.insert({ name = cores.item_of(planet), count = 1 }) end
+  local bonus = (final and 2 or 0) + math.min(2, run or 0)
+  local quality = QUALITY[math.min(#QUALITY, depth + bonus)]
+  local count = final and (2 + math.min(2, run or 0)) or 1
+  inventory.insert({ name = "sap-data-card-alien", count = count, quality = quality })
+  inventory.insert({ name = "sap-alien-data", count = count })
+  if final and planet then inventory.insert({ name = cores.item_of(planet), count = 1 }) end
 end
 
 local function seed_for(planet)
@@ -263,8 +271,11 @@ end
 function dungeon.generate(planet)
   local s = state()
   if s.planets[planet] then return s.planets[planet] end
+  s.runs = s.runs or {}
+  s.by_surface = s.by_surface or {}
+  local run = s.runs[planet] or 0 -- 0 — первая экспедиция (с ядром), дальше — повторные ради добычи
   local theme, guardians = theme_of(planet)
-  local generator = game.create_random_generator(seed_for(planet))
+  local generator = game.create_random_generator((seed_for(planet) + run * 104729) % 4294967295)
   local rng = function(a, b) if a then return generator(a, b) end return generator() end
 
   local size = SIZES[sap_settings.get("sap-dungeon-size")] or 2
@@ -273,7 +284,9 @@ function dungeon.generate(planet)
 
   -- Без автоплейса: всё вне вырезанных залов — пустота (out-of-map), без врагов и ресурсов.
   local none = { treat_missing_as_default = false, settings = {} }
-  local surface = game.create_surface("sap-dungeon-" .. planet, {
+  local surface_name = "sap-dungeon-" .. planet .. (run > 0 and ("-" .. run) or "")
+  s.by_surface[surface_name] = planet
+  local surface = game.create_surface(surface_name, {
     default_enable_all_autoplace_controls = false,
     autoplace_settings = { tile = none, entity = none, decorative = none },
     no_enemies_mode = false, peaceful_mode = false,
@@ -310,7 +323,7 @@ function dungeon.generate(planet)
   surface.set_tiles(list, false, false, false, false)
 
   local record = { surface = surface.name, start = { x = rooms[1].x, y = rooms[1].y + 3 }, rooms = #rooms,
-                   chunks = { cx0, cy0, cx1, cy1 } }
+                   chunks = { cx0, cy0, cx1, cy1 }, planet = planet, run = run }
   s.planets[planet] = record
 
   local exit = place(surface, EXIT, rooms[1].x, rooms[1].y - 3)
@@ -329,43 +342,73 @@ function dungeon.generate(planet)
       local cache = place(surface, CACHE, r.x, r.y)
       if cache then
         cache.destructible = false
-        fill_cache(cache, d, false)
+        fill_cache(cache, d, false, nil, run)
       end
     end
   end
-  -- Древнее ядро и лучшие карты — в самом глубоком зале, его охраняют древние стражи.
+  -- Самый глубокий зал: Смотритель и древние стражи. Тайник (ядро и лучшие карты) появляется,
+  -- когда Смотритель погибнет (dungeon.on_tick).
   local final = rooms[deepest_room]
-  local final_cache = place(surface, CACHE, final.x + 3, final.y + 3)
-  if final_cache then
-    final_cache.destructible = false
-    fill_cache(final_cache, deepest, true, planet)
-    record.final_cache = final_cache
-    record.core_item = cores.item_of(planet)
-  end
+  record.final_pos = { x = final.x + 3, y = final.y + 3 }
+  record.final_depth = deepest
+  record.boss = place(surface, WARDEN, final.x, final.y - 4, "enemy", 10)
   for _ = 1, 2 do place(surface, "sap-alien-guardian", final.x + rng(-6, 6), final.y + rng(-6, 6), "enemy", 8) end
+
+  -- Ловушки: в коридорах и залах (кроме первого), вид — по стилю планеты.
+  local trap_kind = TRAPS[theme.style] or "electric"
+  record.trap_kind = trap_kind
+  for i, r in pairs(rooms) do
+    if i > 1 then
+      for _ = 1, size do
+        local tx, ty = r.x + rng(-r.half + 2, r.half - 2), r.y + rng(-r.half + 2, r.half - 2)
+        if in_room(r, tx, ty) then
+          surface.create_entity({ name = TRAP, position = { tx + 0.5, ty + 0.5 }, force = "neutral" }).destructible = false
+        end
+      end
+      local p = rooms[parent[i]]
+      if p then
+        local mx, my = math.floor((p.x + r.x) / 2), p.y
+        if math.abs(r.y - p.y) > r.half + 3 then mx, my = r.x, math.floor((p.y + r.y) / 2) end
+        if surface.get_tile(mx, my).name ~= "out-of-map" then
+          surface.create_entity({ name = TRAP, position = { mx + 0.5, my + 0.5 }, force = "neutral" }).destructible = false
+        end
+      end
+    end
+  end
 
   -- Двери: на входе в каждый зал глубже второго; замок — в предыдущем зале.
   for i, r in pairs(rooms) do
-    if depth[i] >= 2 then
+    if depth[i] >= 2 or (i == deepest_room and depth[i] >= 1) then
       local p = rooms[parent[i]]
       local pos = doors_at[i]
       local door = surface.create_entity({ name = DOOR, position = pos, force = "neutral" })
       if door then
         door.destructible = false
-        local kind = depth[i] % 2 == 0 and "power" or "key"
+        -- Дверь в последний зал — двойная: нужны и энергия, и ключ.
+        local kind = i == deepest_room and "double" or (depth[i] % 2 == 0 and "power" or "key")
         -- Замок — в предыдущем зале, ближе к двери.
         local dx, dy = r.x - p.x, r.y - p.y
         local len = math.max(1, math.sqrt(dx * dx + dy * dy))
-        local lock = place(surface, kind == "power" and POWER_LOCK or KEY_LOCK,
-                           p.x + dx / len * (p.half - 4), p.y + dy / len * (p.half - 4), "neutral", 8)
-        if lock then
-          lock.destructible = false
-          lock.minable_flag = false
+        local lx, ly = p.x + dx / len * (p.half - 4), p.y + dy / len * (p.half - 4)
+        local function lock_at(name, x, y)
+          local lock = place(surface, name, x, y, "neutral", 8)
+          if lock then
+            lock.destructible = false
+            lock.minable_flag = false
+          end
+          return lock
         end
-        if kind == "key" then
+        local lock, lock2
+        if kind == "double" then
+          lock = lock_at(POWER_LOCK, lx - dy / len * 4, ly + dx / len * 4)
+          lock2 = lock_at(KEY_LOCK, lx + dy / len * 4, ly - dx / len * 4)
+        else
+          lock = lock_at(kind == "power" and POWER_LOCK or KEY_LOCK, lx, ly)
+        end
+        if kind ~= "power" then
           place(surface, KEEPER, p.x + rng(-4, 4), p.y + rng(-4, 4), "enemy", 8)
         end
-        s.doors[#s.doors + 1] = { door = door, lock = lock, kind = kind, planet = planet }
+        s.doors[#s.doors + 1] = { door = door, lock = lock, lock2 = lock2, kind = kind, planet = planet }
       end
     end
   end
@@ -379,7 +422,9 @@ end
 function dungeon.on_chunk_generated(event)
   local surface = event.surface
   if string.sub(surface.name, 1, 12) ~= "sap-dungeon-" then return end
-  local record = state().planets[string.sub(surface.name, 13)]
+  local s = state()
+  local planet = s.by_surface and s.by_surface[surface.name] or string.sub(surface.name, 13)
+  local record = s.planets[planet]
   local p = event.position
   if record and record.chunks then
     local c = record.chunks
@@ -400,7 +445,7 @@ end
 local function check_cores(s)
   for planet, record in pairs(s.planets) do
     local cache = record.final_cache
-    if cache and not record.core_taken
+    if cache and not record.core_taken and (record.run or 0) == 0
         and (not cache.valid or cache.get_inventory(defines.inventory.chest).get_item_count(record.core_item or "sap-ancient-core") == 0) then
       record.core_taken = true
       local forces = {}
@@ -459,6 +504,14 @@ function dungeon.on_tick()
     elseif d.lock and d.lock.valid then
       if d.kind == "power" then
         open = d.lock.get_output_inventory().get_item_count(TOKEN) > 0
+      elseif d.kind == "double" then
+        local powered = d.lock.get_output_inventory().get_item_count(TOKEN) > 0
+        local inventory = d.lock2 and d.lock2.valid and d.lock2.get_inventory(defines.inventory.chest)
+        if powered and inventory and inventory.get_item_count(KEY) > 0 then
+          inventory.remove({ name = KEY, count = 1 })
+          d.lock2.disabled_by_script = true
+          open = true
+        end
       else
         local inventory = d.lock.get_inventory(defines.inventory.chest)
         if inventory.get_item_count(KEY) > 0 then
@@ -471,9 +524,107 @@ function dungeon.on_tick()
         d.lock.disabled_by_script = true
         table.remove(s.doors, i)
         game.forces.player.print({ "sap-dungeon.door-opened" })
+        if dungeon.on_event then dungeon.on_event("door", d.planet) end
       end
     end
   end
+  -- Смотритель погиб — появляется тайник последнего зала.
+  for planet, record in pairs(s.planets) do
+    if record.final_pos and not record.final_cache and not (record.boss and record.boss.valid) then
+      local surface = game.get_surface(record.surface)
+      if surface then
+        local cache = place(surface, CACHE, record.final_pos.x, record.final_pos.y, "neutral", 10)
+        if cache then
+          cache.destructible = false
+          fill_cache(cache, record.final_depth or 1, true, (record.run or 0) == 0 and planet or nil, record.run or 0)
+          record.final_cache = cache
+          record.core_item = cores.item_of(planet)
+          surface.print({ "sap-dungeon.warden-down" })
+          if dungeon.on_event then dungeon.on_event("warden", planet) end
+        end
+      end
+    end
+  end
+end
+
+-- Ловушки ---------------------------------------------------------------------------------
+
+local function trigger_trap(trap, character, kind)
+  local surface, position = character.surface, character.position
+  character.damage(TRAP_DAMAGE[kind] or 50, "neutral", kind == "frost" and "physical" or kind)
+  pcall(function()
+    if kind == "fire" then
+      surface.create_entity({ name = "fire-flame", position = trap.position, force = "enemy" })
+    elseif kind == "poison" then
+      surface.create_entity({ name = "poison-cloud", position = trap.position, force = "enemy" })
+    elseif kind == "frost" then
+      surface.create_entity({ name = "slowdown-sticker", position = position, target = character })
+    else
+      surface.create_entity({ name = "explosion", position = trap.position })
+    end
+  end)
+end
+
+--- Каждые 10 тиков: персонажи на ловушках.
+function dungeon.on_trap_tick()
+  local s = state()
+  if not s.by_surface then return end
+  s.trap_cooldown = s.trap_cooldown or {}
+  for _, player in pairs(game.connected_players) do
+    local character = player.character
+    if character and character.valid then
+      local planet = s.by_surface[character.surface.name]
+      local record = planet and s.planets[planet]
+      if record then dungeon.step_on_traps(character, record) end
+    end
+  end
+end
+
+function dungeon.step_on_traps(character, record)
+  local s = state()
+  s.trap_cooldown = s.trap_cooldown or {}
+  for _, trap in pairs(character.surface.find_entities_filtered({ name = TRAP, position = character.position, radius = 1 })) do
+    local id = trap.unit_number or script.register_on_object_destroyed(trap)
+    if (s.trap_cooldown[id] or 0) <= game.tick then
+      s.trap_cooldown[id] = game.tick + TRAP_COOLDOWN
+      trigger_trap(trap, character, record.trap_kind or "electric")
+      if dungeon.on_event and character.player then dungeon.on_event("trap", record.planet, character.player) end
+      return true
+    end
+  end
+  return false
+end
+
+--- Повторная экспедиция: подземелье пройдено (ядро забрано) — его можно пересоздать с новой
+--- раскладкой; в последнем зале вместо ядра — лучшие карты. Нельзя, пока внутри есть игроки.
+function dungeon.can_reset(planet)
+  local s = state()
+  local record = s.planets[planet]
+  if not (record and record.final_cache and (record.core_taken or (record.run or 0) > 0)) then return false end
+  if (record.run or 0) > 0 and record.final_cache.valid
+      and not record.final_cache.get_inventory(defines.inventory.chest).is_empty() then
+    return false -- добыча прошлой повторной экспедиции ещё не забрана
+  end
+  local surface = game.get_surface(record.surface)
+  for _, player in pairs(game.players) do
+    if surface and player.surface == surface then return false end
+  end
+  return true
+end
+
+function dungeon.reset(planet)
+  if not dungeon.can_reset(planet) then return false end
+  local s = state()
+  local record = s.planets[planet]
+  for i = #s.doors, 1, -1 do
+    if s.doors[i].planet == planet then table.remove(s.doors, i) end
+  end
+  local surface = game.get_surface(record.surface)
+  if surface then game.delete_surface(surface) end
+  s.planets[planet] = nil
+  s.runs = s.runs or {}
+  s.runs[planet] = (record.run or 0) + 1
+  return true
 end
 
 -- Вход и выход ----------------------------------------------------------------------------
@@ -529,16 +680,28 @@ function dungeon.on_gui_opened(event)
                  names = { ENTRANCE, EXIT } },
     })
     frame.add({ type = "button", name = "go", tags = { sap_action = "dungeon" } })
+    frame.add({ type = "button", name = "reset", caption = { "sap-dungeon.reset" },
+                tooltip = { "sap-dungeon.reset-tooltip" }, tags = { sap_action = "dungeon-reset" } })
   end
   frame.go.caption = entity.name == ENTRANCE and { "sap-dungeon.enter" } or { "sap-dungeon.leave" }
+  frame.reset.visible = entity.name == ENTRANCE and dungeon.can_reset(planet_of(entity.surface))
 end
 
 function dungeon.on_gui_click(event)
   local element = event.element
-  if not (element and element.valid and element.tags and element.tags.sap_action == "dungeon") then return end
+  if not (element and element.valid and element.tags) then return end
+  local action = element.tags.sap_action
+  if action ~= "dungeon" and action ~= "dungeon-reset" then return end
   local player = game.get_player(event.player_index)
   local entity = player and player.opened
   if not (entity and entity.object_name == "LuaEntity" and entity.valid) then return end
+  if action == "dungeon-reset" then
+    if entity.name == ENTRANCE and dungeon.reset(planet_of(entity.surface)) then
+      player.print({ "sap-dungeon.reset-done" })
+      element.visible = false
+    end
+    return
+  end
   if entity.name == ENTRANCE then dungeon.enter(player, entity) elseif entity.name == EXIT then dungeon.leave(player) end
 end
 

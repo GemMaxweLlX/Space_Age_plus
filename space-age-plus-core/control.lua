@@ -146,6 +146,16 @@ remote.add_interface("sap-core", {
   end,
   dungeon_enter = function(player_index, entrance) dungeon.enter(game.get_player(player_index), entrance) end,
   dungeon_leave = function(player_index) dungeon.leave(game.get_player(player_index)) end,
+  dungeon_reset = function(planet) return dungeon.reset(planet) end,
+  dungeon_can_reset = function(planet) return dungeon.can_reset(planet) end,
+  dungeon_record = function(planet)
+    local r = storage.dungeons and storage.dungeons.planets[planet]
+    return r and { surface = r.surface, run = r.run, boss = r.boss, final_cache = r.final_cache,
+                   core_taken = r.core_taken, trap_kind = r.trap_kind }
+  end,
+  dungeon_step_on_traps = function(character, planet)
+    return dungeon.step_on_traps(character, storage.dungeons.planets[planet])
+  end,
   dungeon_doors = function(planet)
     local n = 0
     for _, d in pairs(storage.dungeons and storage.dungeons.doors or {}) do
@@ -156,7 +166,7 @@ remote.add_interface("sap-core", {
   dungeon_door_locks = function(planet)
     local result = {}
     for _, d in pairs(storage.dungeons and storage.dungeons.doors or {}) do
-      if d.planet == planet then result[#result + 1] = { door = d.door, lock = d.lock, kind = d.kind } end
+      if d.planet == planet then result[#result + 1] = { door = d.door, lock = d.lock, lock2 = d.lock2, kind = d.kind } end
     end
     return result
   end,
@@ -183,6 +193,7 @@ script.on_event(defines.events.on_cargo_pod_finished_ascending, no_delivery.on_c
 
 -- Подземелья древней расы: двери открываются по замкам.
 script.on_nth_tick(dungeon.TICK_INTERVAL + 3, dungeon.on_tick)
+script.on_nth_tick(dungeon.TRAP_INTERVAL + 1, dungeon.on_trap_tick)
 
 -- Сюжет: перезарядка Древнего узла после «остаться».
 script.on_nth_tick(3600 + 11, story.on_tick)

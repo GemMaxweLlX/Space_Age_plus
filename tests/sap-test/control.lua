@@ -1174,10 +1174,23 @@ steps[9600] = function()
         local cores = 0
         local core_item = remote.call("sap-core", "cores_item", planet)
         for _, c in pairs(caches) do cores = cores + c.get_inventory(defines.inventory.chest).get_item_count(core_item) end
-        check("dungeon " .. planet .. ": ancient core", cores == 1, cores)
+        check("dungeon " .. planet .. ": no core while the Warden lives", cores == 0, cores)
+        local rec = remote.call("sap-core", "dungeon_record", planet)
+        check("dungeon " .. planet .. ": Warden in the last room", rec.boss ~= nil and rec.boss.valid)
+        check("dungeon " .. planet .. ": traps", surface.count_entities_filtered({ name = "sap-ancient-trap" }) > 0)
+        local doubles = 0
+        for _, d in pairs(remote.call("sap-core", "dungeon_door_locks", planet)) do
+          if d.kind == "double" then doubles = doubles + 1 end
+        end
+        check("dungeon " .. planet .. ": one double door to the last room", doubles == 1, doubles)
+        if rec.boss and rec.boss.valid then rec.boss.die() end
         local locks = remote.call("sap-core", "dungeon_door_locks", planet)
         local all_locked = true
-        for _, d in pairs(locks) do if not (d.lock and d.lock.valid) then all_locked = false end end
+        for _, d in pairs(locks) do
+          if not (d.lock and d.lock.valid) or (d.kind == "double" and not (d.lock2 and d.lock2.valid)) then
+            all_locked = false
+          end
+        end
         check("dungeon " .. planet .. ": every door has a lock", all_locked)
         -- Дверь стоит на полу (коридоре), а не в пустоте.
         local on_floor = true
@@ -1218,13 +1231,65 @@ steps[9600] = function()
         storage.dungeon_doors[d.kind] = d.door
         if d.kind == "power" then
           d.lock.get_fuel_inventory().insert({ name = "solid-fuel", count = 5 })
+        elseif d.kind == "double" then
+          d.lock.get_fuel_inventory().insert({ name = "solid-fuel", count = 5 })
+          d.lock2.get_inventory(defines.inventory.chest).insert({ name = "sap-ancient-key", count = 1 })
         else
           d.lock.get_inventory(defines.inventory.chest).insert({ name = "sap-ancient-key", count = 1 })
         end
       end
     end
   end
-  check("dungeon: both lock kinds exist", storage.dungeon_doors.power ~= nil and storage.dungeon_doors.key ~= nil)
+  check("dungeon: all lock kinds exist", storage.dungeon_doors.power ~= nil and storage.dungeon_doors.key ~= nil
+        and storage.dungeon_doors.double ~= nil)
+
+  -- Ловушка: персонаж на ловушке получает урон, повторно — только после перезарядки.
+  local surface = game.get_surface("sap-dungeon-gleba")
+  local trap = surface.find_entities_filtered({ name = "sap-ancient-trap", limit = 1 })[1]
+  local character = surface.create_entity({ name = "character", position = trap.position, force = "player" })
+  local health = character.health
+  check("dungeon: trap triggers", remote.call("sap-core", "dungeon_step_on_traps", character, "gleba") == true)
+  check("dungeon: trap hurts", character.valid and character.health < health)
+  check("dungeon: trap cooldown", remote.call("sap-core", "dungeon_step_on_traps", character, "gleba") == false)
+  if character.valid then character.destroy() end
+end
+
+steps[9700] = function()
+  for _, planet in pairs(DUNGEON_PLANETS) do
+    if game.planets[planet] then
+      local rec = remote.call("sap-core", "dungeon_record", planet)
+      local cache = rec.final_cache
+      local item = remote.call("sap-core", "cores_item", planet)
+      check("dungeon " .. planet .. ": the Warden's death opens the core cache", cache ~= nil and cache.valid
+            and cache.get_inventory(defines.inventory.chest).get_item_count(item) == 1)
+    end
+  end
+  -- Повторная экспедиция (Аквило): нельзя, пока ядро не забрано.
+  check("dungeon: no new expedition before the core is taken", remote.call("sap-core", "dungeon_can_reset", "aquilo") == false)
+  local rec = remote.call("sap-core", "dungeon_record", "aquilo")
+  rec.final_cache.get_inventory(defines.inventory.chest).clear()
+end
+
+steps[9780] = function()
+  check("dungeon: new expedition after the core is taken", remote.call("sap-core", "dungeon_reset", "aquilo") == true)
+  local record = remote.call("sap-core", "dungeon_generate", "aquilo")
+  check("dungeon: new expedition is a new dungeon", record.run == 1 and record.surface == "sap-dungeon-aquilo-1",
+        serpent.line({ record.run, record.surface }))
+  local rec = remote.call("sap-core", "dungeon_record", "aquilo")
+  if rec.boss and rec.boss.valid then rec.boss.die() end
+end
+
+steps[9850] = function()
+  local rec = remote.call("sap-core", "dungeon_record", "aquilo")
+  local inventory = rec.final_cache and rec.final_cache.get_inventory(defines.inventory.chest)
+  local cards = 0
+  for _, stack in pairs(inventory and inventory.get_contents() or {}) do
+    if stack.name == "sap-data-card-alien" then cards = cards + stack.count end
+  end
+  check("dungeon: repeat expedition gives cards, not a core", inventory ~= nil
+        and inventory.get_item_count(remote.call("sap-core", "cores_item", "aquilo")) == 0
+        and cards >= 3, cards)
+  check("dungeon: old expedition surface removed", game.get_surface("sap-dungeon-aquilo") == nil)
 end
 
 steps[9800] = function()
@@ -1232,11 +1297,15 @@ steps[9800] = function()
   check("dungeon: key lock opens its door", key_door ~= nil and not key_door.valid)
   local power_door = storage.dungeon_doors and storage.dungeon_doors.power
   check("dungeon: power lock does not open instantly", power_door ~= nil and power_door.valid)
+  local double_door = storage.dungeon_doors and storage.dungeon_doors.double
+  check("dungeon: double lock needs the power cycle too", double_door ~= nil and double_door.valid)
 end
 
 steps[11600] = function()
   local power_door = storage.dungeon_doors and storage.dungeon_doors.power
   check("dungeon: power lock opens its door after the cycle", power_door ~= nil and not power_door.valid)
+  local double_door = storage.dungeon_doors and storage.dungeon_doors.double
+  check("dungeon: double lock opens with power and key", double_door ~= nil and not double_door.valid)
 end
 
 -- Сюжет и концовки ------------------------------------------------------------------------

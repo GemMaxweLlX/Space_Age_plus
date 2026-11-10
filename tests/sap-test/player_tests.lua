@@ -212,6 +212,24 @@ function player_tests.register(steps, check, finish)
     check("player dungeon: went down", p.surface.name == "sap-dungeon-nauvis", p.surface.name)
   end
 
+  steps[1120] = function()
+    local p = player()
+    local trap = p.surface.find_entities_filtered({ name = "sap-ancient-trap", limit = 1 })[1]
+    check("player dungeon: trap found", trap ~= nil)
+    if trap then
+      storage.pt_back = p.position
+      p.teleport(trap.position)
+      storage.pt_trap_health = p.character.health
+    end
+  end
+
+  steps[1145] = function()
+    local p = player()
+    check("player dungeon: stepping on a trap hurts", p.character and p.character.health < storage.pt_trap_health,
+          p.character and p.character.health)
+    if storage.pt_back then p.teleport(storage.pt_back) end
+  end
+
   steps[1160] = function()
     local p = player()
     local exit = p.surface.find_entities_filtered({ name = "sap-dungeon-exit", limit = 1 })[1]

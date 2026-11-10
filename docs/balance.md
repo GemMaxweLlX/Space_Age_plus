@@ -281,6 +281,7 @@
 | Существо | Здоровье | Скорость | Дальность | Перезарядка, тиков | Урон за удар |
 |---|---|---|---|---|---|
 | Хранитель (`sap-ancient-keeper`) | 2500 | 0.23 | 1.5 | 35 | 30 |
+| Смотритель (`sap-ancient-warden`) | 15000 | 0.3 | 1.5 | 50 | 90 |
 | Annihilator (`sap-annihilator`) | 1500 | 0.138 | 1.5 | 35 | 30 |
 | Вьюга (`sap-blizzard`) | 300 | 0.24 | 1 | 35 | 15 |
 | Бездонный (`sap-bottomless`) | 6000 | 0.15 | 16 | 100 | 0 |
@@ -321,6 +322,7 @@
 | Древний узел (`sap-ancient-nexus`) | container | 600 |  |  |
 | Древний пьедестал (`sap-ancient-pedestal`) | container | 350 |  |  |
 | Энергетический замок (`sap-ancient-power-lock`) | assembling-machine | 300 | 1000 | 1 |
+| Древняя ловушка (`sap-ancient-trap`) | simple-entity-with-owner | 100 |  |  |
 | Сборочный автомат Mk2+ (`sap-assembling-machine-mk2plus`) | assembling-machine | 400 | 375 | 2.5 |
 | Атмосферный коллектор (`sap-atmospheric-collector`) | assembling-machine | 300 | 210 | 1 |
 | Биокамера Mk2 (`sap-biochamber-mk2`) | assembling-machine | 300 | 500 | 3 |
@@ -465,6 +467,7 @@
 | diary.lua | `AUTONOMOUS_MACHINES` | 30 |  |
 | diary.lua | `DEADLOCK_MACHINES` | 10 |  |
 | diary.lua | `DEADLOCK_SHARE` | 0.8 |  |
+| dungeon.lua | `TRAP_COOLDOWN` | 120 |  |
 | dungeon.lua | `CORRIDOR` | 1 | полуширина коридора (ширина 3) |
 | exploration.lua | `FIND_CHANCE` | 0.5 |  |
 | exploration.lua | `FIND_CHANCE_HARDCORE` | 0.25 |  |

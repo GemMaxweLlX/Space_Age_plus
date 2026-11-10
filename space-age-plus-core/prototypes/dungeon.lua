@@ -35,6 +35,25 @@ power_lock.energy_source = { type = "burner", fuel_categories = { "chemical", "n
 power_lock.next_upgrade = nil
 power_lock.fast_replaceable_group = nil
 
+-- Ловушка: плита в полу, по ней можно ходить; срабатывает скриптом (огонь, разряд, яд, холод).
+local landmine = data.raw["land-mine"]["land-mine"]
+local trap = {
+  type = "simple-entity-with-owner", name = "sap-ancient-trap",
+  icons = { { icon = landmine.icon, icon_size = landmine.icon_size or 64, tint = { r = 1, g = 0.4, b = 0.3, a = 1 } } },
+  flags = { "placeable-neutral", "not-on-map" },
+  collision_box = { { -0.4, -0.4 }, { 0.4, 0.4 } }, selection_box = { { -0.5, -0.5 }, { 0.5, 0.5 } },
+  collision_mask = { layers = {} }, render_layer = "floor",
+  picture = util.table.deepcopy(landmine.picture_set_enemy or landmine.picture_set),
+  max_health = 100, hidden_in_factoriopedia = true,
+}
+
+-- Смотритель: босс последнего зала. Пока он жив, тайника с ядром нет.
+local warden = util.table.deepcopy(data.raw.unit["behemoth-biter"])
+warden.name = "sap-ancient-warden"
+warden.max_health = 15000
+warden.healing_per_tick = 0.05
+warden.loot = nil
+
 local keeper = util.table.deepcopy(data.raw.unit["big-biter"])
 keeper.name = "sap-ancient-keeper"
 keeper.max_health = 2500
@@ -71,7 +90,7 @@ data:extend({
     effects = { { type = "unlock-recipe", recipe = "sap-ancient-pedestal" } },
     research_trigger = { type = "scripted", trigger_description = { "technology-trigger.sap-ancient-pedestal" } },
   },
-  door, power_lock, keeper,
+  door, power_lock, keeper, trap, warden,
   {
     type = "item", name = "sap-ancient-key",
     icons = { { icon = "__base__/graphics/icons/processing-unit.png", icon_size = 64, tint = { r = 1, g = 0.9, b = 0.4, a = 1 } } },
