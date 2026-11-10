@@ -1,6 +1,8 @@
 ---------------------------------------------------------------------------------------------------
 Version: 0.1.0
 Date: 2026-11-09
+  Bugfixes:
+    - Mechanite zone centers at the edge of the generated map are retried later instead of being lost.
   Major Features:
     - Echaris planet orbiting Fulgora, discovery technology.
     - Permanent magnetic storm: machines at 50-70%, robots damaged outside stabilizer areas, roboports lose power.

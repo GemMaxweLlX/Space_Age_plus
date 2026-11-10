@@ -86,7 +86,7 @@ end
 local function build_zone(surface, center_pos, distance)
   local center_type = CENTER_TYPES[math.random(1, #CENTER_TYPES)]
   local center = place(surface, "sap-center-" .. center_type, center_pos, 32, "neutral")
-  if not center then return end
+  if not center then return false end
   local inventory = center.get_inventory(defines.inventory.chest)
   local categories = CENTERS[center_type]
   for _ = 1, math.random(2, 3) do
@@ -110,7 +110,11 @@ local function process_queue(surface)
   local queue = s.queue
   s.queue = {}
   for _, item in pairs(queue) do
-    build_zone(surface, item.position, item.distance)
+    -- На краю карты соседние участки ещё не готовы и места нет: пробуем позже (до 5 раз).
+    if build_zone(surface, item.position, item.distance) == false and (item.tries or 0) < 5 then
+      item.tries = (item.tries or 0) + 1
+      s.queue[#s.queue + 1] = item
+    end
   end
 end
 
