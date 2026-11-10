@@ -1343,6 +1343,13 @@ steps[11900] = function()
         and game.get_surface("sap-dungeon-echaris") == nil)
 end
 
+-- Выгрузка цифр баланса (tools/balance.py).
+local balance = require("balance")
+steps[12] = function()
+  local techs, recipes, units = balance.dump()
+  check("balance: dump written", techs > 0 and recipes > 0 and units > 0, techs .. "/" .. recipes .. "/" .. units)
+end
+
 -- После загрузки сохранения (MODE=saveload) ранние шаги уже выполнены; отмечаем загрузку.
 script.on_load(function()
   log("SAP-TEST INFO loaded save, continuing")
