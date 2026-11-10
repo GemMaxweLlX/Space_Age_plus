@@ -242,10 +242,16 @@ function player_tests.register(steps, check, finish)
           and frame.inherit ~= nil and frame.seal ~= nil)
     if frame then remote.call("sap-core", "test_click", p.index, frame.restore) end
     check("player story: ending chosen from the window", remote.call("sap-core", "story_ending", p.force.name) == "restore")
+    frame = p.gui.relative["sap_story_frame"]
+    check("player story: go home / stay buttons", frame ~= nil and frame["return"] ~= nil and frame.stay ~= nil)
+    if frame then remote.call("sap-core", "test_click", p.index, frame.stay) end
+    check("player story: stayed", remote.call("sap-core", "story_stage", p.force.name) == "recharge")
+    remote.call("sap-core", "test_story_recharge", p.force.name)
     p.opened = nil
     p.opened = nexus
     frame = p.gui.relative["sap_story_frame"]
-    check("player story: buttons disabled after the choice", frame ~= nil and not frame.seal.enabled)
+    check("player story: chosen ending disabled, others enabled", frame ~= nil and not frame.restore.enabled
+          and frame.seal.enabled and frame.unity == nil)
   end
 
   steps[1300] = function() finish() end

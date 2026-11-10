@@ -200,6 +200,13 @@ steps[70] = function()
   for _, name in pairs({ "nauvis", "echaris" }) do
     wrecks = wrecks + game.surfaces[name].count_entities_filtered({ name = "sap-data-wreck" })
   end
+  -- В MODE=migration старые чанки сгенерированы до мода: проверяем на новой области.
+  if wrecks == 0 and techtree_on() then
+    local nauvis = game.surfaces.nauvis
+    nauvis.request_to_generate_chunks({ 3000, 3000 }, 8)
+    nauvis.force_generate_chunk_requests()
+    wrecks = nauvis.count_entities_filtered({ name = "sap-data-wreck" })
+  end
   check("techtree: data wrecks generated", not techtree_on() or wrecks > 0, wrecks)
 end
 
@@ -1019,6 +1026,17 @@ steps[9500] = function()
   -- Отвоевание зон: зона без барьера возвращается Механитам, зона с барьером — нет.
   local echaris = game.surfaces["echaris"]
   local function server_at(near)
+    -- Точка без чужих серверов и барьеров в радиусе зоны (40), иначе зона считается занятой.
+    local busy = { "sap-control-server", "sap-control-server-heavy", "sap-force-barrier", "sap-force-barrier-mk2" }
+    for i = 0, 40 do
+      local candidate = { near[1] + (i % 7) * 120, near[2] + math.floor(i / 7) * 120 }
+      echaris.request_to_generate_chunks(candidate, 2)
+      echaris.force_generate_chunk_requests()
+      if echaris.count_entities_filtered({ name = busy, position = candidate, radius = 60, limit = 1 }) == 0 then
+        near = candidate
+        break
+      end
+    end
     local pos = clear_spot(echaris, near, 4)
     return echaris.create_entity({ name = "sap-control-server", position = pos, force = "enemy" })
   end
@@ -1265,17 +1283,43 @@ steps[11800] = function()
   check("story: nexus built", nexus ~= nil)
   check("story: nexus diary entry", has_entry("player", "story-nexus"))
 
-  -- Наследие (команда player).
+  -- Наследие (команда player), затем «остаться» и другие концовки.
   check("story: choose inheritance", remote.call("sap-core", "story_choose", "player", "inherit") == true)
-  check("story: only one ending", remote.call("sap-core", "story_choose", "player", "seal") == false)
+  check("story: no second ending before deciding", remote.call("sap-core", "story_choose", "player", "seal") == false)
   check("story: ending stored", remote.call("sap-core", "story_ending", "player") == "inherit")
+  check("story: decide stage", remote.call("sap-core", "story_stage", "player") == "decide")
   local all = true
   for name, t in pairs(game.forces.player.technologies) do
     if string.sub(name, 1, 10) == "sap-alien-" and not t.researched then all = false end
   end
   check("story: inheritance researches ancient technologies", all)
   check("story: inheritance epilogue", has_entry("player", "story-ending-inherit"))
+  check("story: stay", remote.call("sap-core", "story_decide", "player", "stay") == true)
+  check("story: stay entry", has_entry("player", "story-stay"))
+  check("story: recharging after staying", remote.call("sap-core", "story_stage", "player") == "recharge")
+  check("story: nothing available while recharging",
+        next(remote.call("sap-core", "story_available", "player")) == nil)
   check("story: game not finished when victory is off", not game.finished)
+  remote.call("sap-core", "test_story_recharge", "player")
+  local available = remote.call("sap-core", "story_available", "player")
+  check("story: other endings open after recharge", available.restore and available.seal and not available.inherit)
+  check("story: secret ending still locked after one ending", not available.unity)
+  check("story: second ending (awakening)", remote.call("sap-core", "story_choose", "player", "restore") == true)
+  remote.call("sap-core", "story_decide", "player", "stay")
+  remote.call("sap-core", "test_story_recharge", "player")
+  available = remote.call("sap-core", "story_available", "player")
+  check("story: secret ending opens after two endings", available.unity == true and available.seal == true)
+  check("story: unity ends the story", remote.call("sap-core", "story_choose", "player", "unity") == true
+        and remote.call("sap-core", "story_stage", "player") == "done")
+  check("story: unity epilogue", has_entry("player", "story-ending-unity"))
+  check("story: nothing after the end", next(remote.call("sap-core", "story_available", "player")) == nil)
+
+  -- Возвращение домой (отдельная команда).
+  local home = game.create_force("sap-story-home")
+  remote.call("sap-core", "story_choose", home.name, "inherit")
+  check("story: go home", remote.call("sap-core", "story_decide", home.name, "return") == true
+        and remote.call("sap-core", "story_stage", home.name) == "done")
+  check("story: return epilogue", has_entry(home.name, "story-return"))
 
   -- Пробуждение (отдельная команда): стражи становятся союзниками.
   local awake = game.create_force("sap-story-awake")

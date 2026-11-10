@@ -155,6 +155,10 @@ remote.add_interface("sap-core", {
   end,
   story_choose = function(force_name, ending) return story.choose(game.forces[force_name], ending) end,
   story_ending = function(force_name) return story.ending_of(game.forces[force_name]) end,
+  story_decide = function(force_name, decision) return story.decide(game.forces[force_name], decision) end,
+  story_stage = function(force_name) return story.stage_of(game.forces[force_name]) end,
+  story_available = function(force_name) return story.available(game.forces[force_name]) end,
+  test_story_recharge = function(force_name) story.test_recharge(game.forces[force_name]) end,
   test_set_story_victory = function(value) settings.global["sap-story-victory"] = { value = value } end, -- luacheck: ignore 122
   researched_quality = function(force_name, tech) return quality_bonus.researched_quality(game.forces[force_name], tech) end,
 })
@@ -170,3 +174,6 @@ script.on_event(defines.events.on_cargo_pod_finished_ascending, no_delivery.on_c
 
 -- Подземелья древней расы: двери открываются по замкам.
 script.on_nth_tick(dungeon.TICK_INTERVAL + 3, dungeon.on_tick)
+
+-- Сюжет: перезарядка Древнего узла после «остаться».
+script.on_nth_tick(3600 + 11, story.on_tick)

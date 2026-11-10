@@ -15,7 +15,7 @@ Requires Factorio 2.1 with the Space Age expansion. *Русская версия
 
 | Mod | What it adds |
 |---|---|
-| `space-age-plus-core` | Oxygen, planet exploration (telescope and two satellite generations), hidden technology tree (data cards, decipherer, logic lab complex, quality versions of technologies with building bonuses), hive capture for Space Age+ planets, high-grade fluid systems, steam turbine Mk2, cisterns, ancient vaults, dungeons and a story with three endings, engineer's diary |
+| `space-age-plus-core` | Oxygen, planet exploration (telescope and two satellite generations), hidden technology tree (data cards, decipherer, logic lab complex, quality versions of technologies with building bonuses), hive capture for Space Age+ planets, high-grade fluid systems, steam turbine Mk2, cisterns, ancient vaults, dungeons and a story with several endings (go home or stay, a secret ending), engineer's diary |
 | `space-age-plus-debris` | Items thrown off platforms become debris on the route; rocket wreckage piles up in orbit and falls on planets; special debris near Space Age+ planets |
 | `space-age-plus-solaris` | Solaris, the planet next to the Sun: lava, coronal mass ejections, overheating, volcanic gas and molten metal, super boiler and mega turbine, lava creatures |
 | `space-age-plus-echaris` | Echaris, moon of Fulgora: permanent magnetic storm, Mechanites and their control servers, capture centers with data cards, force barrier, stealth, hacking |
