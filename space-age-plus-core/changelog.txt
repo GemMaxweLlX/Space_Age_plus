@@ -13,3 +13,4 @@ Date: 2026-11-09
     - Settings preset: Custom / Casual / Standard / Hardcore.
     - API for other mods (docs/api.md), with keep_visible and set_tech_category for the hidden tree.
     - Planet science packs: each made only on its planet, needed by the Space Age+ technologies tied to it.
+    - Ancient race dungeons: an entrance next to each vault; one dungeon per planet with its own layout (grid, lava chain, ring, flooded islands, ice caves), doors with power and key locks, guardians, the Keeper, caches with alien cards and an ancient core; four new alien technologies.

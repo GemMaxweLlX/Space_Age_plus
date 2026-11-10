@@ -7,18 +7,22 @@ local quality_bonus = require("scripts.quality_bonus")
 local capture = require("scripts.capture")
 local condensing = require("scripts.condensing")
 local no_delivery = require("scripts.no_delivery")
+local dungeon = require("scripts.dungeon")
 
 script.on_init(function()
   oxygen.on_init()
   exploration.on_init()
   techtree.on_init()
   quality_bonus.on_init()
+  dungeon.on_init()
 end)
 
 script.on_configuration_changed(function()
   oxygen.on_configuration_changed()
   exploration.on_configuration_changed()
   techtree.on_configuration_changed()
+  dungeon.on_init()
+  dungeon.add_missing_entrances()
 end)
 
 -- Кислород
@@ -44,12 +48,19 @@ script.on_event(defines.events.on_research_finished, function(event)
 end)
 
 -- Дерево технологий и дневник: у мода один обработчик на событие, поэтому общие.
-script.on_event(defines.events.on_gui_opened, techtree.on_gui_opened)
+script.on_event(defines.events.on_gui_opened, function(event)
+  techtree.on_gui_opened(event)
+  dungeon.on_gui_opened(event)
+end)
 script.on_event(defines.events.on_gui_click, function(event)
   techtree.on_gui_click(event)
   diary.on_gui_click(event)
+  dungeon.on_gui_click(event)
 end)
-script.on_event(defines.events.on_chunk_generated, techtree.on_chunk_generated)
+script.on_event(defines.events.on_chunk_generated, function(event)
+  techtree.on_chunk_generated(event)
+  dungeon.on_chunk_generated(event)
+end)
 
 -- Постройка: телескоп, бонусы качества, дневник (все постройки игрока).
 for _, e in pairs({ defines.events.on_built_entity, defines.events.on_robot_built_entity,
@@ -104,6 +115,7 @@ remote.add_interface("sap-core", {
     local event = { element = element, player_index = player_index, name = defines.events.on_gui_click }
     techtree.on_gui_click(event)
     diary.on_gui_click(event)
+    dungeon.on_gui_click(event)
   end,
   test_toggle_diary = function(player_index) diary.toggle({ player_index = player_index }) end,
   test_set_llk_chance = function(value) settings.global["sap-llk-chance"] = { value = value } end, -- luacheck: ignore 122
@@ -115,6 +127,26 @@ remote.add_interface("sap-core", {
   no_delivery_override = function(surface_name, value) no_delivery.set_override(surface_name, value) end,
   check_pod = function(pod) return no_delivery.check_pod(pod, nil) end,
   unlock_tech = function(force_name, tech, quality) techtree.unlock(game.forces[force_name], tech, quality) end,
+  dungeon_generate = function(planet) return dungeon.generate(planet) end,
+  dungeon_place_entrance = function(surface_name, position)
+    return dungeon.place_entrance(game.get_surface(surface_name), position)
+  end,
+  dungeon_enter = function(player_index, entrance) dungeon.enter(game.get_player(player_index), entrance) end,
+  dungeon_leave = function(player_index) dungeon.leave(game.get_player(player_index)) end,
+  dungeon_doors = function(planet)
+    local n = 0
+    for _, d in pairs(storage.dungeons and storage.dungeons.doors or {}) do
+      if d.planet == planet and d.door.valid then n = n + 1 end
+    end
+    return n
+  end,
+  dungeon_door_locks = function(planet)
+    local result = {}
+    for _, d in pairs(storage.dungeons and storage.dungeons.doors or {}) do
+      if d.planet == planet then result[#result + 1] = { door = d.door, lock = d.lock, kind = d.kind } end
+    end
+    return result
+  end,
   researched_quality = function(force_name, tech) return quality_bonus.researched_quality(game.forces[force_name], tech) end,
 })
 
@@ -126,3 +158,6 @@ script.on_nth_tick(condensing.TICK_INTERVAL + 2, condensing.on_tick)
 
 -- Хардкор «Без доставки с платформы»
 script.on_event(defines.events.on_cargo_pod_finished_ascending, no_delivery.on_cargo_pod_finished_ascending)
+
+-- Подземелья древней расы: двери открываются по замкам.
+script.on_nth_tick(dungeon.TICK_INTERVAL + 3, dungeon.on_tick)

@@ -198,7 +198,36 @@ function player_tests.register(steps, check, finish)
     check("player elevator: came back up", p.surface.name == "nivar", p.surface.name)
   end
 
-  steps[1100] = function() finish() end
+  -- Подземелье ----------------------------------------------------------------------
+  steps[1100] = function()
+    local p = player()
+    local nauvis = game.surfaces.nauvis
+    p.teleport(nauvis.find_non_colliding_position("character", { 30, 30 }, 30, 1) or { 30, 30 }, nauvis)
+    local entrance = remote.call("sap-core", "dungeon_place_entrance", "nauvis", { p.position.x + 4, p.position.y })
+    storage.pt_entrance = entrance
+    p.opened = entrance
+    local frame = p.gui.relative["sap_dungeon_frame"]
+    check("player dungeon: entrance window", frame ~= nil)
+    if frame then remote.call("sap-core", "test_click", p.index, frame.go) end
+    check("player dungeon: went down", p.surface.name == "sap-dungeon-nauvis", p.surface.name)
+  end
+
+  steps[1160] = function()
+    local p = player()
+    local exit = p.surface.find_entities_filtered({ name = "sap-dungeon-exit", limit = 1 })[1]
+    check("player dungeon: exit near start", exit ~= nil)
+    if exit then
+      p.opened = exit
+      local frame = p.gui.relative["sap_dungeon_frame"]
+      if frame then remote.call("sap-core", "test_click", p.index, frame.go) end
+    end
+    check("player dungeon: came back up", p.surface.name == "nauvis", p.surface.name)
+    local e = storage.pt_entrance
+    check("player dungeon: returned near the entrance", e and e.valid
+          and math.abs(p.position.x - e.position.x) + math.abs(p.position.y - e.position.y) < 20)
+  end
+
+  steps[1200] = function() finish() end
 end
 
 return player_tests

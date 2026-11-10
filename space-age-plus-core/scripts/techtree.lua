@@ -17,6 +17,7 @@ local techtree = {}
 
 local quality_bonus = require("scripts.quality_bonus")
 local diary = require("scripts.diary")
+local dungeon = require("scripts.dungeon")
 
 local DECIPHERER = "sap-decipherer"
 local LOGIC_LAB = "sap-logic-lab"
@@ -481,6 +482,7 @@ local function build_vault(item)
   if not position then return end
   local vault = surface.create_entity({ name = VAULT, position = position, force = "neutral" })
   if not vault then return end
+  dungeon.place_entrance(surface, { position.x + 6, position.y })
   local roll = math.random() + math.min(item.distance / 3000, 0.6)
   local quality = roll > 1.45 and "legendary" or roll > 1.3 and "epic" or roll > 1.1 and "rare"
     or roll > 0.85 and "uncommon" or "normal"

@@ -1137,6 +1137,81 @@ steps[29000] = function()
   log("SAP-TEST DONE failures=" .. launches)
 end
 
+-- Подземелья древней расы ---------------------------------------------------------------
+local DUNGEON_PLANETS = { "nauvis", "vulcanus", "fulgora", "gleba", "aquilo", "solaris", "echaris", "aquara", "nivar" }
+
+steps[9600] = function()
+  local profiler = helpers.create_profiler()
+  for _, planet in pairs(DUNGEON_PLANETS) do
+    if game.planets[planet] then
+      local record = remote.call("sap-core", "dungeon_generate", planet)
+      local surface = game.get_surface("sap-dungeon-" .. planet)
+      check("dungeon " .. planet .. ": surface", surface ~= nil)
+      if surface then
+        check("dungeon " .. planet .. ": rooms", record.rooms >= 6, record.rooms)
+        check("dungeon " .. planet .. ": doors", record.doors >= 1, record.doors)
+        check("dungeon " .. planet .. ": exit", surface.count_entities_filtered({ name = "sap-dungeon-exit" }) == 1)
+        local caches = surface.find_entities_filtered({ name = "sap-ancient-cache" })
+        check("dungeon " .. planet .. ": caches", #caches >= record.rooms - 1, #caches)
+        local cores = 0
+        for _, c in pairs(caches) do cores = cores + c.get_inventory(defines.inventory.chest).get_item_count("sap-ancient-core") end
+        check("dungeon " .. planet .. ": ancient core", cores == 1, cores)
+        local locks = remote.call("sap-core", "dungeon_door_locks", planet)
+        local all_locked = true
+        for _, d in pairs(locks) do if not (d.lock and d.lock.valid) then all_locked = false end end
+        check("dungeon " .. planet .. ": every door has a lock", all_locked)
+        -- Дверь стоит на полу (коридоре), а не в пустоте.
+        local on_floor = true
+        for _, d in pairs(locks) do
+          if surface.get_tile(d.door.position).name == "out-of-map" then on_floor = false end
+        end
+        check("dungeon " .. planet .. ": doors in corridors", on_floor)
+        check("dungeon " .. planet .. ": void outside rooms",
+              surface.get_tile(record.start.x + 25, record.start.y + 25).name == "out-of-map"
+              or surface.get_tile(record.start.x - 25, record.start.y - 25).name == "out-of-map")
+        local start = surface.find_non_colliding_position("character", record.start, 10, 0.5)
+        check("dungeon " .. planet .. ": start is walkable", start ~= nil)
+      end
+    end
+  end
+  profiler.stop()
+  log({ "", "SAP-TEST INFO dungeon generation (all planets): ", profiler })
+  -- Повторный вызов возвращает то же подземелье.
+  local again = remote.call("sap-core", "dungeon_generate", "nauvis")
+  check("dungeon: generated once", again.surface == "sap-dungeon-nauvis")
+  -- Вход у хранилища на Наувисе.
+  local entrance = remote.call("sap-core", "dungeon_place_entrance", "nauvis", { 40, 40 })
+  check("dungeon: entrance placed", entrance ~= nil and entrance.valid)
+
+  -- Открываем по одной двери каждого вида.
+  storage.dungeon_doors = {}
+  for _, planet in pairs(DUNGEON_PLANETS) do
+    for _, d in pairs(remote.call("sap-core", "dungeon_door_locks", planet)) do
+      if not storage.dungeon_doors[d.kind] then
+        storage.dungeon_doors[d.kind] = d.door
+        if d.kind == "power" then
+          d.lock.get_fuel_inventory().insert({ name = "solid-fuel", count = 5 })
+        else
+          d.lock.get_inventory(defines.inventory.chest).insert({ name = "sap-ancient-key", count = 1 })
+        end
+      end
+    end
+  end
+  check("dungeon: both lock kinds exist", storage.dungeon_doors.power ~= nil and storage.dungeon_doors.key ~= nil)
+end
+
+steps[9800] = function()
+  local key_door = storage.dungeon_doors and storage.dungeon_doors.key
+  check("dungeon: key lock opens its door", key_door ~= nil and not key_door.valid)
+  local power_door = storage.dungeon_doors and storage.dungeon_doors.power
+  check("dungeon: power lock does not open instantly", power_door ~= nil and power_door.valid)
+end
+
+steps[11600] = function()
+  local power_door = storage.dungeon_doors and storage.dungeon_doors.power
+  check("dungeon: power lock opens its door after the cycle", power_door ~= nil and not power_door.valid)
+end
+
 -- После загрузки сохранения (MODE=saveload) ранние шаги уже выполнены; отмечаем загрузку.
 script.on_load(function()
   log("SAP-TEST INFO loaded save, continuing")
