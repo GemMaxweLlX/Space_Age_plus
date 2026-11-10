@@ -1,0 +1,8 @@
+---------------------------------------------------------------------------------------------------
+Version: 0.1.0
+Date: 2026-11-09
+  Major Features:
+    - Jettisoned items become debris on route segments and planet orbits.
+    - Metal, electronic and rocket debris chunks, crushing recipes.
+    - Rocket debris after 20 launches can fall onto the planet.
+    - Debris near Space Age+ planets: electrified (Echaris), heated (Solaris), biofilm (Aquara), frozen (Nivar).

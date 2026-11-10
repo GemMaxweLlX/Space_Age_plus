@@ -1,0 +1,49 @@
+-- Настройки ядра Space Age+ (docs: Глобальные механики → Кислород, Хардкор).
+-- Каждая хардкор-опция включается отдельно, общей кнопки нет.
+data:extend({
+  -- Набор: «Свой» — действуют отдельные настройки ниже; остальные наборы подменяют их.
+  { type = "string-setting", name = "sap-preset", setting_type = "startup",
+    default_value = "custom", allowed_values = { "custom", "casual", "standard", "hardcore" }, order = "0" },
+
+  -- Кислород
+  { type = "bool-setting", name = "sap-oxygen-enabled", setting_type = "runtime-global",
+    default_value = true, order = "a-a" },
+  { type = "string-setting", name = "sap-oxygen-death-speed", setting_type = "runtime-global",
+    default_value = "medium", allowed_values = { "slow", "medium", "fast" }, order = "a-b" },
+  { type = "string-setting", name = "sap-oxygen-tank-size", setting_type = "runtime-global",
+    default_value = "medium", allowed_values = { "small", "medium", "large" }, order = "a-c" },
+  { type = "int-setting", name = "sap-oxygen-distributor-radius", setting_type = "startup",
+    default_value = 16, minimum_value = 8, maximum_value = 64, order = "a-d" },
+
+  -- Исследование планет
+  { type = "bool-setting", name = "sap-exploration-vanilla-planets", setting_type = "startup",
+    default_value = true, order = "b-a" },
+
+  -- Дерево технологий
+  { type = "bool-setting", name = "sap-techtree-enabled", setting_type = "startup",
+    default_value = true, order = "c-a" },
+  { type = "int-setting", name = "sap-llk-chance", setting_type = "runtime-global",
+    default_value = 15, minimum_value = 10, maximum_value = 20, order = "c-b" },
+
+  -- Подземелья древней расы
+  { type = "bool-setting", name = "sap-dungeons-enabled", setting_type = "startup",
+    default_value = true, order = "d-0" },
+  { type = "string-setting", name = "sap-dungeon-size", setting_type = "runtime-global",
+    default_value = "normal", allowed_values = { "small", "normal", "large" }, order = "d-1" },
+  { type = "string-setting", name = "sap-dungeon-guardians", setting_type = "runtime-global",
+    default_value = "normal", allowed_values = { "few", "normal", "many" }, order = "d-2" },
+  { type = "int-setting", name = "sap-story-recharge-minutes", setting_type = "runtime-global",
+    default_value = 30, minimum_value = 0, maximum_value = 240, order = "d-3" },
+
+  -- Сюжет: экран победы после выбора концовки (игру можно продолжить).
+  { type = "bool-setting", name = "sap-story-victory", setting_type = "runtime-global",
+    default_value = true, order = "d-a" },
+
+  -- Глобальные хардкор-опции
+  { type = "bool-setting", name = "sap-hardcore-strict-oxygen", setting_type = "runtime-global",
+    default_value = false, order = "z-a" },
+  { type = "bool-setting", name = "sap-hardcore-decipher-only", setting_type = "startup",
+    default_value = false, order = "z-b" },
+  { type = "bool-setting", name = "sap-hardcore-satellite", setting_type = "startup",
+    default_value = false, order = "z-c" },
+})

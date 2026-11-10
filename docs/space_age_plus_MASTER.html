@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Space Age+ — Мастер документ</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:system-ui,sans-serif;background:#f9f9f8;color:#1a1a18;padding:1rem;font-size:13px;}
+.page{display:none;}.page.active{display:block;}
+.top-nav{display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap;}
+.top-btn{padding:6px 13px;font-size:11px;border:0.5px solid #ccc;border-radius:20px;cursor:pointer;color:#666;background:transparent;font-weight:500;}
+.top-btn:hover{background:#f1f0e8;}.top-btn.active{background:#1a1a18;color:#fff;border-color:transparent;}
+.sub-nav{display:flex;gap:4px;margin-bottom:14px;flex-wrap:wrap;border-bottom:0.5px solid #e5e5e3;padding-bottom:8px;}
+.sub-btn{padding:4px 10px;font-size:11px;border:0.5px solid #ccc;border-radius:20px;cursor:pointer;color:#666;background:transparent;}
+.sub-btn:hover{background:#f1f0e8;}.sub-btn.active{border-color:transparent;font-weight:500;}
+h2{font-size:15px;font-weight:500;margin-bottom:10px;}
+h3{font-size:12px;font-weight:500;margin-bottom:5px;}
+.card{background:#fff;border:0.5px solid #e5e5e3;border-radius:10px;padding:11px 13px;margin-bottom:8px;}
+.card.purple{border-left:2px solid #a855f7;}.card.blue{border-left:2px solid #3b82f6;}
+.card.green{border-left:2px solid #22c55e;}.card.amber{border-left:2px solid #f59e0b;}
+.card.red{border-left:2px solid #ef4444;}.card.gray{border-left:2px solid #9ca3af;}
+.card.teal{border-left:2px solid #14b8a6;}.card.orange{border-left:2px solid #f97316;}
+.card.ice{border-left:2px solid #7dd3fc;}.card.dark{border-left:2px solid #475569;}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+.three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px;}
+p,.sub{font-size:12px;color:#555;line-height:1.65;}
+ul{padding-left:14px;}ul li{font-size:12px;color:#555;line-height:1.8;}
+.pill{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;margin-right:3px;margin-bottom:3px;}
+.p-purple{background:#f3e8ff;color:#7e22ce;}.p-blue{background:#dbeafe;color:#1d4ed8;}
+.p-green{background:#dcfce7;color:#15803d;}.p-amber{background:#fef3c7;color:#92400e;}
+.p-red{background:#fee2e2;color:#991b1b;}.p-gray{background:#f1f0e8;color:#555;border:0.5px solid #ddd;}
+.p-teal{background:#ccfbf1;color:#0f766e;}.p-orange{background:#ffedd5;color:#9a3412;}
+.p-ice{background:#e0f2fe;color:#0369a1;}
+.note{background:#fef3c7;border-radius:7px;padding:7px 11px;font-size:11px;color:#92400e;margin-top:7px;}
+.good{background:#dcfce7;border-radius:7px;padding:7px 11px;font-size:11px;color:#15803d;margin-top:7px;}
+.info{background:#dbeafe;border-radius:7px;padding:7px 11px;font-size:11px;color:#1d4ed8;margin-top:7px;}
+.divider{height:0.5px;background:#e5e5e3;margin:9px 0;}
+.table{width:100%;border-collapse:collapse;font-size:11px;}
+.table th{text-align:left;padding:5px 7px;font-weight:500;color:#666;border-bottom:0.5px solid #e5e5e3;}
+.table td{padding:5px 7px;border-bottom:0.5px solid #e5e5e3;color:#333;vertical-align:top;}
+.table tr:last-child td{border-bottom:none;}
+.sl{font-size:10px;font-weight:500;color:#999;text-transform:uppercase;letter-spacing:.06em;margin:12px 0 6px;}
+.open{background:#fef3c7;border-radius:7px;padding:8px 11px;font-size:12px;color:#92400e;margin-bottom:6px;display:flex;gap:8px;}
+.on{font-weight:500;flex-shrink:0;min-width:28px;}
+.diary{background:#fafaf9;border:0.5px solid #e5e5e3;border-left:3px solid #a855f7;border-radius:0 8px 8px 0;padding:9px 11px;margin:7px 0;font-size:12px;color:#374151;line-height:1.7;font-style:italic;}
+.dl{font-size:10px;font-weight:500;color:#a855f7;margin-bottom:4px;font-style:normal;}
+.step{display:flex;gap:10px;align-items:flex-start;margin-bottom:8px;}
+.sn{width:22px;height:22px;border-radius:50%;background:#f3e8ff;color:#7e22ce;font-size:11px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.st{font-size:12px;font-weight:500;color:#1a1a18;margin-bottom:2px;}
+.sd{font-size:11px;color:#555;line-height:1.5;}
+</style>
+</head><body>
+
+<div style="margin-bottom:12px">
+  <div style="font-size:20px;font-weight:500;margin-bottom:2px">Space Age+</div>
+  <div style="font-size:11px;color:#888">Мастер документ v0.3</div>
+</div>
+
+<div class="top-nav">
+  <button class="top-btn active" onclick="S('overview',this)">Обзор</button>
+  <button class="top-btn" onclick="S('global',this)">Глобальные механики</button>
+  <button class="top-btn" onclick="S('planets',this)">Планеты</button>
+  <button class="top-btn" onclick="S('plantech',this)">Техи планет</button>
+  <button class="top-btn" onclick="S('tech',this)">Технологии</button>
+  <button class="top-btn" onclick="S('diary',this)">Дневник</button>
+  <button class="top-btn" onclick="S('questions',this)">Вопросы</button>
+</div>
+
+<div id="overview" class="page active">
+  <h2>Все модули Space Age+</h2>
+  <div class="card purple"><h3>Концепция</h3><p>Модульный мод для Factorio DLC Space Age. Каждый модуль устанавливается отдельно. Хардкор-настройки опциональны и выбираются индивидуально.</p></div>
+  <div class="sl">Модули</div>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>space-age-plus-debris</strong> — Космический мусор, все маршруты</div><span class="pill p-amber">Идея готова</span></div></div>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>space-age-plus-echaris</strong> — Спутник Фульгоры, Механиты</div><span class="pill p-amber">Идея готова</span></div></div>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>space-age-plus-solaris</strong> — Планета у Солнца, лава</div><span class="pill p-amber">Идея готова</span></div></div>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>space-age-plus-aquara</strong> — Спутник Глебы, водный мир</div><span class="pill p-amber">Идея готова</span></div></div>
+  <div class="card"><div style="display:flex;justify-content:space-between;align-items:center"><div><strong>space-age-plus-nivar</strong> — Спутник Аквило, лёд и пещеры</div><span class="pill p-amber">Идея готова</span></div></div>
+  <div class="sl">Глобальные механики</div>
+  <div class="card"><strong>Исследование планет</strong> — туман войны, телескоп, спутники 2 поколений</div>
+  <div class="card"><strong>Система кислорода</strong> — генератор, распределитель, коллектор</div>
+  <div class="card"><strong>Переосмысление технологий</strong> — скрытое дерево, тех данные, дешифратор, ЛЛК</div>
+  <div class="card"><strong>Дневник инженера</strong> — журналы, инопланетные данные, комментарии</div>
+  <div class="card"><strong>Захват ульев SA+</strong> — перекалибровка для каждой планеты</div>
+  <div class="card"><strong>Система жидкостей высокого класса</strong> — трубы, помпа Mk2, сверхпрочный насос</div>
+</div>
+
+<div id="global" class="page">
+  <div class="sub-nav">
+    <button class="sub-btn active" style="background:#ede9fe;color:#6d28d9" onclick="T('g1',this,'#ede9fe','#6d28d9')">Планеты</button>
+    <button class="sub-btn" onclick="T('g2',this,'#ccfbf1','#0f766e')">Кислород</button>
+    <button class="sub-btn" onclick="T('g3',this,'#f1f0e8','#555')">Мусор</button>
+    <button class="sub-btn" onclick="T('g4',this,'#fce7f3','#9d174d')">Хардкор</button>
+    <button class="sub-btn" onclick="T('g5',this,'#f3e8ff','#7e22ce')">Захват ульев</button>
+  </div>
+  <div id="g1" class="page active">
+    <h2>Исследование планет</h2>
+    <div class="card blue"><h3>Уровень 1 — Телескоп</h3><ul><li>Строится на Наувисе, открывает ближайшие тела — только силуэт</li><li>Открывает технологию спутника 1 поколения</li></ul></div>
+    <div class="card amber"><h3>Уровень 2 — Спутник 1 поколения</h3><ul><li>Ненадёжный, падает после работы. Шанс найти — не гарантия.</li><li>При успехе — название и расстояние, детали скрыты</li><li>Каждый запуск — прогресс к спутнику 2 поколения</li><li>Стандарт: 10 запусков. Хардкор: 30-50, меньше шанс, быстрее падает.</li></ul></div>
+    <div class="card green"><h3>Уровень 3 — Спутник 2 поколения</h3><ul><li>Надёжный, постоянный. Открывает полные детали планеты.</li><li>Разблокирует технологии полёта к планете.</li></ul></div>
+    <div class="card teal"><h3>Статус планеты и технологии</h3>
+      <table class="table"><thead><tr><th>Статус</th><th>Технологии</th></tr></thead><tbody>
+      <tr><td>Не найдена</td><td>Скрыты полностью</td></tr>
+      <tr><td>Найдена спутником 1</td><td>Видны названия, заблокированы</td></tr>
+      <tr><td>Разведана спутником 2</td><td>Технологии полёта разблокированы</td></tr>
+      <tr><td>Посещена</td><td>Все технологии планеты доступны</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+  <div id="g2" class="page" style="display:none">
+    <h2>Система кислорода</h2>
+    <div class="three">
+      <div class="card blue"><h3>Атмосферный коллектор</h3><p>Собирает местный воздух. Свой рецепт для каждой планеты. Не работает без атмосферы.</p></div>
+      <div class="card green"><h3>Генератор кислорода</h3><p>Производит из ресурсов. Работает везде. Основная постройка там где нет атмосферы.</p></div>
+      <div class="card purple"><h3>Распределитель</h3><p>Создаёт пузырь с воздухом вокруг. Небольшая зона. Нужно несколько для большой базы.</p></div>
+    </div>
+    <div class="card red"><h3>Без кислорода</h3><ul><li>Постепенно теряет здоровье</li><li>В чате: "Неисправная система жизнеобеспечения"</li><li>3 настройки скорости: медленно / среднее / быстро</li><li>3 настройки объёма баллона. У каждого игрока своя система.</li></ul></div>
+    <div class="card gray"><h3>По планетам</h3>
+      <table class="table"><thead><tr><th>Планета</th><th>Решение</th></tr></thead><tbody>
+      <tr><td>Наувис</td><td>Не нужно</td></tr>
+      <tr><td>Вулканус</td><td>Только генератор</td></tr>
+      <tr><td>Фульгора</td><td>Коллектор + фильтр</td></tr>
+      <tr><td>Глеба</td><td>Коллектор + биофильтр</td></tr>
+      <tr><td>Аквило</td><td>Коллектор + концентратор</td></tr>
+      <tr><td>Solaris</td><td>Только генератор</td></tr>
+      <tr><td>Echaris</td><td>Коллектор + ЭМИ-фильтр</td></tr>
+      <tr><td>Aquara</td><td>Коллектор + осушитель</td></tr>
+      <tr><td>Nivar</td><td>Коллектор + криоконцентратор</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+  <div id="g3" class="page" style="display:none">
+    <h2>Космический мусор</h2>
+    <div class="card blue"><ul>
+      <li>Выброшенные предметы становятся мусором на маршруте</li>
+      <li>Маршрут делится на 10% отрезки со счётчиками</li>
+      <li>Состав мусора зависит от выброшенного</li>
+      <li>Мусор глобальный. Подобрал один — у остальных исчезает при посещении отрезка</li>
+      <li>Подбирается сборщиком метеоритов из Space Age</li>
+      <li>После 20+ ракет — обломки на орбите, могут падать на планету</li>
+    </ul></div>
+    <div class="two">
+      <div class="card amber"><h3>По орбитам SA+</h3><ul><li>Echaris — мусор электризуется</li><li>Solaris — нагревается</li><li>Aquara — биоплёнка</li><li>Nivar — замерзает</li></ul></div>
+      <div class="card green"><h3>Мотивация к уборке</h3><ul><li>Больше мусора → чаще падения</li><li>Подбор → ресурсы при дроблении</li><li>Чистая орбита → меньше угроз</li></ul></div>
+    </div>
+  </div>
+  <div id="g4" class="page" style="display:none">
+    <h2>Хардкор-настройки</h2>
+    <div class="card red"><p>Каждый выбирает опции отдельно — не одна общая кнопка.</p></div>
+    <div class="card gray">
+      <table class="table"><thead><tr><th>Опция</th><th>Что меняет</th><th>Где</th></tr></thead><tbody>
+      <tr><td>Агрессивные мобы</td><td>Атакуют без провокации</td><td>Aquara, Solaris</td></tr>
+      <tr><td>Постоянная буря</td><td>Без передышки</td><td>Aquara</td></tr>
+      <tr><td>Без доставки с платформы</td><td>Только местные ресурсы</td><td>Echaris, Nivar</td></tr>
+      <tr><td>Волны по таймеру</td><td>Механиты атакуют по расписанию</td><td>Echaris</td></tr>
+      <tr><td>Без нейтральной зоны</td><td>Убрать зону посадки</td><td>Echaris</td></tr>
+      <tr><td>Строгий кислород</td><td>Быстрее умирать без кислорода</td><td>Все планеты</td></tr>
+      <tr><td>Только дешифратор</td><td>ЛЛК не работает</td><td>Глобально</td></tr>
+      <tr><td>Спутник 1 поколения</td><td>30-50 запусков, меньше шанс</td><td>Глобально</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+  <div id="g5" class="page" style="display:none">
+    <h2>Захват ульев SA+</h2>
+    <div class="card green"><h3>Механика</h3><p>Глеба открывает базовую технологию (ваниль). Каждая планета SA+ — технология "Перекалибровка захватчика: [планета]". Снаряд в ракетницу → выстрел в гнездо → захват. Без биофлюса теряет здоровье и возвращается к врагам.</p></div>
+    <div class="card gray">
+      <table class="table"><thead><tr><th>Планета</th><th>Гнёзда</th><th>Дроп</th><th>Биофлюс</th></tr></thead><tbody>
+      <tr><td><strong>Solaris</strong></td><td>Скорч, Магмар</td><td>Чешуйки, лавовые сгустки</td><td>Биофлюс Глебы + термит + магматит</td></tr>
+      <tr><td><strong>Aquara</strong></td><td>Рябь, Прибой</td><td>Ядовитые железы, панцири</td><td>Биофлюс Глебы + соль + водоросли</td></tr>
+      <tr><td><strong>Nivar (поверхность)</strong></td><td>Вьюга</td><td>Криопанцирь</td><td>Биофлюс Глебы + криолит + руда</td></tr>
+      <tr><td><strong>Nivar (пещеры)</strong></td><td>Иней, Сталагмит</td><td>Криожелезы, шипы</td><td>Биофлюс Глебы + криолит + тёмный лёд</td></tr>
+      <tr><td><strong>Echaris</strong></td><td>—</td><td>—</td><td>Механиты не живые, захвата нет</td></tr>
+      </tbody></table>
+    </div>
+    <div class="note">Крупные одиночки (Молтен, Бездна, Ледяной страж, Бездонный) — без гнёзд. Только убить для дропа.</div>
+  </div>
+</div>
+
+<div id="planets" class="page">
+  <div class="sub-nav">
+    <button class="sub-btn active" style="background:#ffedd5;color:#9a3412" onclick="T('pl1',this,'#ffedd5','#9a3412')">Solaris</button>
+    <button class="sub-btn" onclick="T('pl2',this,'#fdf4ff','#7e22ce')">Echaris</button>
+    <button class="sub-btn" onclick="T('pl3',this,'#e0f2fe','#0369a1')">Aquara</button>
+    <button class="sub-btn" onclick="T('pl4',this,'#eff6ff','#1d4ed8')">Nivar</button>
+    <button class="sub-btn" onclick="T('pl5',this,'#f1f0e8','#555')">Мусор</button>
+  </div>
+  <div id="pl1" class="page active">
+    <h2>Solaris — Планета у Солнца</h2>
+    <div class="card orange"><p>Покрыта лавой. Коронарная масса. Перегрев механизмов. Загрязнение не работает. День 80% времени. Мобы пассивны.</p></div>
+    <div class="two">
+      <div class="card red"><h3>Коронарная масса</h3><ul><li>Частые выбросы, лучей 1-5 (настраивается)</li><li>Зонтик — блокирует, большое потребление</li><li>Приёмник — поглощает, даёт тепло для сверхбойлера</li><li>Петля: приёмник → бойлер → мегатурбина → 90% воды → бойлер</li><li>Восполнение 10% воды — лёд или цистерны с платформы</li></ul></div>
+      <div class="card amber"><h3>Перегрев</h3><ul><li>Стадии: нормальная→горячая→критическая→сломана</li><li>Радиаторы + термотрубки</li><li>Тепло с радиаторов → сверхбойлер</li></ul></div>
+    </div>
+    <div class="card gray"><h3>Три типа лавовых существ</h3>
+      <table class="table"><thead><tr><th>Тип</th><th>Атака</th><th>Гнездо</th></tr></thead><tbody>
+      <tr><td><strong>Скорч</strong> (мелкий)</td><td>Таран</td><td>Можно захватить</td></tr>
+      <tr><td><strong>Магмар</strong> (средний)</td><td>Огненные плевки</td><td>Можно захватить</td></tr>
+      <tr><td><strong>Молтен</strong> (крупный)</td><td>Таран + лавовый след</td><td>Одиночка, только убить</td></tr>
+      </tbody></table>
+    </div>
+    <div class="card green"><h3>Ресурсы</h3>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+      <span class="pill p-red">Магматическая руда</span><span class="pill p-amber">Жаропрочные кристаллы</span>
+      <span class="pill p-orange">Термит</span><span class="pill p-gray">Вулканический газ</span><span class="pill p-gray">Расплавленный металл</span>
+      </div>
+    </div>
+  </div>
+  <div id="pl2" class="page" style="display:none">
+    <h2>Echaris — Спутник Фульгоры</h2>
+    <div class="card purple"><p>Цивилизация Фульгорианцев. Всё работает без хозяев. Постоянная магнитная буря. Механиты патрулируют зоны.</p></div>
+    <div class="two">
+      <div class="card red"><h3>Постоянная буря</h3><ul><li>Постройки на 50-70% без защиты</li><li>Дроны теряют навигацию</li><li>Защита: стабилизатор, фундамент, ЭМИ-экран</li><li>Дроны Mk2 — встроенная защита</li></ul></div>
+      <div class="card blue"><h3>Зоны и центры</h3><ul><li>Сложность зависит от расстояния от старта</li><li>Механиты отвоёвывают зону без барьера</li><li>Силовой барьер — ваншот при входе</li><li>Сервер контроля — физическая постройка на карте</li><li>4 типа центров → карты данных</li></ul></div>
+    </div>
+    <div class="card gray"><h3>5 типов Механитов</h3>
+      <table class="table"><thead><tr><th>Тип</th><th>Особенность</th></tr></thead><tbody>
+      <tr><td>Disruptor</td><td>ЭМИ — вырубает дронов и турели</td></tr>
+      <tr><td>Annihilator</td><td>Медленный, пробивает броню</td></tr>
+      <tr><td>Sentinel-09</td><td>Патруль, реагирует на шум, вызывает подкрепления</td></tr>
+      <tr><td>Stormbringer</td><td>Подзаряжается от бури — всегда усилен</td></tr>
+      <tr><td>Overseer</td><td>Координатор, при смерти — тревога</td></tr>
+      </tbody></table>
+    </div>
+    <div class="card teal"><h3>4 типа центров захвата</h3>
+      <table class="table"><thead><tr><th>Центр</th><th>Даёт карты</th></tr></thead><tbody>
+      <tr><td>Центр данных</td><td>Смешанный тип</td></tr>
+      <tr><td>Центр подавления сигналов</td><td>Боевые технологии</td></tr>
+      <tr><td>Центр механической сборки</td><td>Производство и логистика</td></tr>
+      <tr><td>Энергетический комплекс</td><td>Энергетические технологии</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+  <div id="pl3" class="page" style="display:none">
+    <h2>Aquara — Спутник Глебы</h2>
+    <div class="card teal"><p>Водный мир с островами. Биосфера Глебы. Водоросли, бури с торнадо. Водные пентаподы патрулируют зоны.</p></div>
+    <div class="two">
+      <div class="card blue"><h3>Водоросли</h3><ul><li>3 вида: зелёные, глубинные, биолюминесцентные</li><li>Водная башня — сбор урожая, ставится на воду</li><li>Портятся как на Глебе</li><li>Морская соль замедляет порчу</li><li>Нужны биофлюс и углеволокно с Глебы</li></ul></div>
+      <div class="card red"><h3>Бури и торнадо</h3><ul><li>3 типа: слабая, средняя, сильная</li><li>Торнадо — аналог коронарной массы</li><li>Штормовой щит — купол</li><li>Штормовой якорь — ротор + динамо, притягивает торнадо → энергия</li></ul></div>
+    </div>
+    <div class="card gray"><h3>3 типа водных пентаподов</h3>
+      <table class="table"><thead><tr><th>Тип</th><th>Атака</th><th>Гнездо</th></tr></thead><tbody>
+      <tr><td><strong>Рябь</strong> (мелкий)</td><td>Укус + ядовитый след</td><td>Можно захватить</td></tr>
+      <tr><td><strong>Прибой</strong> (средний)</td><td>Водяной плевок</td><td>Можно захватить</td></tr>
+      <tr><td><strong>Бездна</strong> (крупный)</td><td>Таран + волна</td><td>Одиночка, только убить</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+  <div id="pl4" class="page" style="display:none">
+    <h2>Nivar — Спутник Аквило</h2>
+    <div class="card ice"><p>Ледяная пустыня. Холоднее Аквило. Два слоя — поверхность и пещеры. Существа опасны в стаях при буре. Ресурсы только под льдом.</p></div>
+    <div class="two">
+      <div class="card red"><h3>Криобуря</h3><ul><li>Стадии замерзания: холодная→промёрзшая→остановлена→сломана</li><li>2 уровня обогрева — обычный и крио</li><li>Криозащитный купол — аналог зонтика Solaris</li></ul></div>
+      <div class="card dark"><h3>Пещеры</h3><ul><li>Отдельный слой карты под льдом</li><li>Вход через расщелины на поверхности</li><li>Глубинный бур — только добыча, не вход</li><li>Лифт — передача ресурсов и спуск игрока</li><li>Темно — нужны криолампы</li><li>Защищены от криобури</li></ul></div>
+    </div>
+    <div class="card gray"><h3>Существа поверхности</h3>
+      <table class="table"><thead><tr><th>Тип</th><th>Атака</th><th>Гнездо</th></tr></thead><tbody>
+      <tr><td><strong>Вьюга</strong> (средний)</td><td>Удар + заморозка. В буран — стаи.</td><td>Можно захватить</td></tr>
+      <tr><td><strong>Ледяной страж</strong> (крупный)</td><td>Таран + ледяное дыхание</td><td>Одиночка, только убить</td></tr>
+      </tbody></table>
+    </div>
+    <div class="card dark"><h3>Существа пещер</h3>
+      <table class="table"><thead><tr><th>Тип</th><th>Атака</th><th>Гнездо</th></tr></thead><tbody>
+      <tr><td><strong>Иней</strong> (мелкий)</td><td>Укус, реагирует на тепло и вибрации</td><td>Можно захватить</td></tr>
+      <tr><td><strong>Сталагмит</strong> (средний)</td><td>Ледяные шипы, охраняет ресурсы</td><td>Можно захватить</td></tr>
+      <tr><td><strong>Бездонный</strong> (крупный)</td><td>Дробление + крио-волна</td><td>Одиночка, только убить</td></tr>
+      </tbody></table>
+      <div class="note">Пещерные существа — слепые но хорошо слышат. Во время криобури наверху активнее из-за вибраций.</div>
+    </div>
+  </div>
+  <div id="pl5" class="page" style="display:none">
+    <h2>Космический мусор</h2>
+    <div class="card blue">
+      <div class="step"><div class="sn">1</div><div><div class="st">Выброс предмета с платформы</div><div class="sd">Регистрируется в global.debris[сегмент]</div></div></div>
+      <div class="step"><div class="sn">2</div><div><div class="st">Мусор на маршруте</div><div class="sd">10% отрезки — счётчик, состав выброшенного</div></div></div>
+      <div class="step"><div class="sn">3</div><div><div class="st">Подбор сборщиком метеоритов</div><div class="sd">Счётчик уменьшается → ресурсы по составу сегмента</div></div></div>
+      <div class="step"><div class="sn">4</div><div><div class="st">Ракетные обломки</div><div class="sd">После 20+ запусков → обломки на орбите → падения на планету</div></div></div>
+    </div>
+    <div class="good">Мусор глобальный — все видят. Кто подобрал — у остальных исчезает при следующем посещении отрезка.</div>
+  </div>
+</div>
+
+<div id="plantech" class="page">
+  <div class="sub-nav">
+    <button class="sub-btn active" style="background:#ffedd5;color:#9a3412" onclick="T('pt1',this,'#ffedd5','#9a3412')">Solaris</button>
+    <button class="sub-btn" onclick="T('pt2',this,'#fdf4ff','#7e22ce')">Echaris</button>
+    <button class="sub-btn" onclick="T('pt3',this,'#e0f2fe','#0369a1')">Aquara</button>
+    <button class="sub-btn" onclick="T('pt4',this,'#eff6ff','#1d4ed8')">Nivar</button>
+    <button class="sub-btn" onclick="T('pt5',this,'#f1f0e8','#555')">Глобальные</button>
+  </div>
+  <div id="pt1" class="page active">
+    <h2>Технологии Solaris (~20)</h2>
+    <div class="sl">Материалы</div>
+    <div class="card orange"><table class="table"><thead><tr><th>Технология</th><th>Описание</th></tr></thead><tbody>
+      <tr><td>Жаропрочный сплав</td><td>Базовый материал Solaris</td></tr>
+      <tr><td>Термит Mk2</td><td>Улучшенное химсоединение</td></tr>
+      <tr><td>Жаропрочный конвейер</td><td>Не разрушается от жары и холода, быстрее обычного</td></tr>
+    </tbody></table>
+    <div class="info">Жидкости — через глобальные технологии: Сверхпрочный насос 2400/с, Нефтекачалка Mk2, Трубы сверхвысоких температур, Помпа Mk2.</div></div>
+    <div class="sl">Защита от перегрева</div>
+    <div class="card red"><table class="table"><thead><tr><th>Технология</th><th>Описание</th></tr></thead><tbody>
+      <tr><td>Радиатор охлаждения</td><td>Базовая защита от перегрева</td></tr>
+      <tr><td>Радиатор Mk2</td><td>Повышенная мощность отвода тепла</td></tr>
+      <tr><td>Термотрубки Mk2</td><td>Выдерживают более высокие температуры</td></tr>
+      <tr><td>Термоэлектрический генератор</td><td>Пассивная энергия от перепада температур</td></tr>
+    </tbody></table></div>
+    <div class="sl">Коронарная масса и энергетика</div>
+    <div class="card amber"><table class="table"><thead><tr><th>Технология</th><th>Описание</th></tr></thead><tbody>
+      <tr><td>Зонтик защиты</td><td>Блокирует коронарную массу, большое потребление</td></tr>
+      <tr><td>Зонтик Mk2</td><td>Меньше потребление</td></tr>
+      <tr><td>Захватчик луча</td><td>Поглощает коронарную массу → тепло</td></tr>
+      <tr><td>Сверхбойлер</td><td>Использует тепло захватчика</td></tr>
+      <tr><td>Сверхбойлер Mk2</td><td>Выше КПД</td></tr>
+      <tr><td>Мега-турбина</td><td>Только для сверхбойлера. Огромная генерация + 90% воды.</td></tr>
+    </tbody></table></div>
+    <div class="sl">Броня и доставка</div>
+    <div class="card gray"><table class="table"><thead><tr><th>Технология</th><th>Описание</th></tr></thead><tbody>
+      <tr><td>Жаропрочная броня</td><td>Защита от жары и лавовых атак</td></tr>
+      <tr><td>Огнеупорные стены</td><td>Выдерживают контакт с лавой</td></tr>
+      <tr><td>Улучшенная капсула доставки</td><td>Скидывать ценные ресурсы и цистерны с платформы</td></tr>
+      <tr><td>Ядро Молтена</td><td>Из дропа Молтена — жаростойкие компоненты</td></tr>
+    </tbody></table></div>
+    <div class="sl">Захват ульев</div>
+    <div class="card red"><table class="table"><thead><tr><th>Гнездо</th><th>Дроп</th><th>Биофлюс</th></tr></thead><tbody>
+      <tr><td>Гнездо Скорча</td><td>Жаропрочные чешуйки</td><td>Биофлюс Глебы + термит + магматит</td></tr>
+      <tr><td>Гнездо Магмара</td><td>Лавовые сгустки</td><td>Биофлюс Глебы + термит + магматит</td></tr>
+    </tbody></table></div>
+    <div class="good">Список на подтверждении — открытый вопрос S1.</div>
+  </div>
+  <div id="pt2" class="page" style="display:none">
+    <h2>Технологии Echaris (~40)</h2>
+    <div class="sl">Улучшения Mk2</div>
+    <div class="card gray"><table class="table"><thead><tr><th>Технология</th><th>Улучшение</th></tr></thead><tbody>
+      <tr><td>Аккумулятор Mk2</td><td>Больше ёмкость</td></tr>
+      <tr><td>Pumpjack Mk2</td><td>Выше выход</td></tr>
+      <tr><td>Солнечная панель Mk2</td><td>Выше КПД</td></tr>
+      <tr><td>Центрифуга Mk2</td><td>Быстрее</td></tr>
+      <tr><td>Электропечь Mk2</td><td>Быстрее, меньше энергии</td></tr>
+      <tr><td>Сборочный автомат Mk2+</td><td>Выше скорость чем Mk3</td></tr>
+      <tr><td>Хранилище жидкости Mk2</td><td>Увеличенный объём</td></tr>
+      <tr><td>Радар Mk2</td><td>Больший радиус</td></tr>
+      <tr><td>Роботодок Mk2</td><td>Больше слотов, быстрее зарядка</td></tr>
+      <tr><td>Логистический дрон Mk2</td><td>Дольше, быстрее, защита от бури</td></tr>
+      <tr><td>Строительный дрон Mk2</td><td>Дольше, быстрее, защита от бури</td></tr>
+      <tr><td>Логистический маяк Mk2</td><td>Больший радиус</td></tr>
+    </tbody></table></div>
+    <div class="sl">Новые технологии</div>
+    <div class="card purple"><table class="table"><thead><tr><th>Технология</th><th>Описание</th></tr></thead><tbody>
+      <tr><td>Башня-ретранслятор энергии</td><td>Энергия без проводов 300+ тайлов</td></tr>
+      <tr><td>Модульный реактор</td><td>Компактный, без воды</td></tr>
+      <tr><td>Разрядник Echaris</td><td>Цепная молния между врагами</td></tr>
+      <tr><td>Плазменный карабин</td><td>Пробивает броню Механитов</td></tr>
+      <tr><td>ЭМИ-граната</td><td>Глушит роботов в радиусе</td></tr>
+      <tr><td>Экзоскелет Echaris</td><td>Броня с ЭМИ-щитом</td></tr>
+      <tr><td>Электромагнитная турель</td><td>Особо эффективна против Механитов</td></tr>
+      <tr><td>Турель-подавитель</td><td>Замедляет и глушит в радиусе</td></tr>
+      <tr><td>Зенитная ЭМИ-пушка</td><td>Сбивает Overseer до тревоги</td></tr>
+      <tr><td>Силовой барьер Mk2</td><td>Ваншот стражей, держится дольше</td></tr>
+      <tr><td>Костюм стелса</td><td>Снижает радиус обнаружения</td></tr>
+      <tr><td>Протокол тихого захвата</td><td>Захват центра без тревоги</td></tr>
+      <tr><td>Взлом Механитов</td><td>Захваченные работают на игрока</td></tr>
+      <tr><td>Архивный дешифратор</td><td>Повышает шанс карты высокого качества</td></tr>
+    </tbody></table></div>
+  </div>
+  <div id="pt3" class="page" style="display:none">
+    <h2>Технологии Aquara (~15, нужно больше)</h2>
+    <div class="sl">Фермерство</div>
+    <div class="card teal"><table class="table"><thead><tr><th>Технология</th><th>Описание</th></tr></thead><tbody>
+      <tr><td>Водная башня</td><td>Сбор водорослей на воде</td></tr>
+      <tr><td>Водная башня Mk2</td><td>Больший радиус, работает при шторме</td></tr>
+      <tr><td>Водный участок Mk2</td><td>Ускоренный рост водорослей</td></tr>
+      <tr><td>Консервация морской солью</td><td>Замедляет порчу биоматериалов</td></tr>
+      <tr><td>Биолюминесцентные водоросли</td><td>Разблокирует редкий вид</td></tr>
+      <tr><td>Ускоренная переработка</td><td>Быстрее производство биопродуктов</td></tr>
+    </tbody></table></div>
+    <div class="sl">Защита от бурь</div>
+    <div class="card blue"><table class="table"><thead><tr><th>Технология</th><th>Описание</th></tr></thead><tbody>
+      <tr><td>Штормовой щит</td><td>Купол от торнадо</td></tr>
+      <tr><td>Штормовой якорь</td><td>Притягивает торнадо, ротор → энергия</td></tr>
+      <tr><td>Якорь Mk2</td><td>Выдерживает сильные торнадо</td></tr>
+      <tr><td>Штормовой прогнозатор</td><td>Предупреждение о буре</td></tr>
+    </tbody></table></div>
+    <div class="sl">Добыча и захват</div>
+    <div class="card green"><table class="table"><thead><tr><th>Технология</th><th>Описание</th></tr></thead><tbody>
+      <tr><td>Подводный бур</td><td>Добыча глубоководной руды</td></tr>
+      <tr><td>Морской испаритель</td><td>Производство морской соли</td></tr>
+      <tr><td>Переработка ядовитых желёз</td><td>Химические рецепты</td></tr>
+      <tr><td>Панцирная броня Aquara</td><td>Водостойкая броня</td></tr>
+      <tr><td>Ядро Бездны</td><td>Уникальный материал</td></tr>
+    </tbody></table></div>
+    <div class="note">Открытый вопрос A1 — нужно дополнить список.</div>
+  </div>
+  <div id="pt4" class="page" style="display:none">
+    <h2>Технологии Nivar (~18, нужно больше)</h2>
+    <div class="sl">Защита от холода</div>
+    <div class="card ice"><table class="table"><thead><tr><th>Технология</th><th>Описание</th></tr></thead><tbody>
+      <tr><td>Криообогреватель</td><td>Обогрев уровня 2 — справляется с криобурей</td></tr>
+      <tr><td>Криообогреватель Mk2</td><td>Меньше потребление, больше радиус</td></tr>
+      <tr><td>Криозащитный купол</td><td>Защищает зону от бури</td></tr>
+      <tr><td>Изолирующий фундамент</td><td>Замедляет замерзание построек</td></tr>
+      <tr><td>Термоизоляционные стены</td><td>Держат тепло внутри периметра</td></tr>
+      <tr><td>Криолампы</td><td>Стабильное освещение при экстремальном холоде</td></tr>
+      <tr><td>Криопроводящие трубы</td><td>Не лопаются при замерзании</td></tr>
+    </tbody></table></div>
+    <div class="sl">Добыча и пещеры</div>
+    <div class="card blue"><table class="table"><thead><tr><th>Технология</th><th>Описание</th></tr></thead><tbody>
+      <tr><td>Глубинный бур</td><td>Бурит сквозь лёд, поднимает ресурсы</td></tr>
+      <tr><td>Глубинный бур Mk2</td><td>Быстрее, глубже</td></tr>
+      <tr><td>Лифт между слоями</td><td>Ресурсы и спуск игрока</td></tr>
+      <tr><td>Пещерный конвейер</td><td>Работает при экстремальном холоде</td></tr>
+      <tr><td>Нивалит</td><td>Уникальный сверхпроводник Nivar</td></tr>
+      <tr><td>Нивалитовые провода</td><td>Передача энергии без потерь</td></tr>
+    </tbody></table></div>
+    <div class="sl">Броня и оружие</div>
+    <div class="card gray"><table class="table"><thead><tr><th>Технология</th><th>Описание</th></tr></thead><tbody>
+      <tr><td>Криоброня</td><td>Защита от атак Вьюги и ледяного дыхания</td></tr>
+      <tr><td>Пещерная броня</td><td>Лёгкая, для манёвренности в пещерах</td></tr>
+      <tr><td>Криопанцирь</td><td>Материал из дропа Вьюги</td></tr>
+      <tr><td>Ледяное ядро стража</td><td>Редкий материал</td></tr>
+      <tr><td>Ядро Бездонного</td><td>Уникальный материал из глубоких пещер</td></tr>
+    </tbody></table></div>
+    <div class="note">Открытый вопрос N1 — нужно дополнить список.</div>
+  </div>
+  <div id="pt5" class="page" style="display:none">
+    <h2>Глобальные технологии</h2>
+    <div class="sl">Система жидкостей высокого класса</div>
+    <div class="note" style="margin-bottom:8px">Открываются на Solaris — там впервые нужна работа с лавой и сверхгорячими жидкостями. Применяются глобально на всех планетах. Аналог литейного завода с Вулканус.</div>
+    <div class="card blue"><table class="tbl"><thead><tr><th>Технология</th><th>Описание</th></tr></thead><tbody>
+      <tr><td>Трубы сверхвысоких температур</td><td>Любые жидкости включая лаву. Открывается на Solaris, работает везде.</td></tr>
+      <tr><td>Помпа Mk2</td><td>Давление в трубах на больших расстояниях. Открывается на Solaris.</td></tr>
+      <tr><td>Сверхпрочный насос</td><td>2400/с, любые жидкости. Открывается на Solaris.</td></tr>
+      <tr><td>Улучшенная нефтекачалка Mk2</td><td>Все жидкие ресурсы быстрее, меньше энергии. Открывается на Solaris.</td></tr>
+    </tbody></table></div>
+    <div class="sl">Логистика и транспорт</div>
+    <div class="card gray"><table class="table"><thead><tr><th>Технология</th><th>Описание</th></tr></thead><tbody>
+      <tr><td>Цистерна</td><td>500 единиц жидкости (бочка = 100)</td></tr>
+      <tr><td>Паровая турбина Mk2</td><td>Генерирует энергию + 90% пара → вода</td></tr>
+    </tbody></table></div>
+    <div class="info">Межпланетные зависимости: Echaris←Фульгора, Solaris←Вулканус, Aquara←Глеба, Nivar←Аквило, Echaris←Nivar (нивалит), Echaris←Solaris (кристаллы).</div>
+  </div>
+</div>
+
+<div id="tech" class="page">
+  <div class="sub-nav">
+    <button class="sub-btn active" style="background:#f3e8ff;color:#7e22ce" onclick="T('t1',this,'#f3e8ff','#7e22ce')">Концепция</button>
+    <button class="sub-btn" onclick="T('t2',this,'#dbeafe','#1d4ed8')">Базовые техи</button>
+    <button class="sub-btn" onclick="T('t3',this,'#dcfce7','#15803d')">Дешифратор</button>
+    <button class="sub-btn" onclick="T('t4',this,'#fef3c7','#92400e')">Категории</button>
+  </div>
+  <div id="t1" class="page active">
+    <h2>Переосмысление дерева технологий</h2>
+    <div class="card purple"><p>Большинство технологий скрыты с самого начала. Игрок находит тех данные в обломках кораблей, руинах баз и инопланетных подземельях. Два пути открытия: Дешифратор (надёжно) и ЛЛК (шанс).</p></div>
+    <div class="two">
+      <div class="card blue"><h3>Источники тех данных</h3><ul><li>Обломки кораблей и руины — все планеты</li><li>Инопланетные подземелья — древняя раса</li><li>Стартовый гарантированный обломок на Наувисе</li><li>На труднодоступных планетах обломков меньше</li></ul></div>
+      <div class="card green"><h3>Качество тех данных</h3>
+        <table class="table"><thead><tr><th>Качество</th><th>Выбор технологий</th><th>Не сгорает</th></tr></thead><tbody>
+        <tr><td><span class="pill p-gray">Обычные</span></td><td>3 обычные</td><td>10%</td></tr>
+        <tr><td><span class="pill p-green">Необычные</span></td><td>3, одна улучшенная</td><td>20%</td></tr>
+        <tr><td><span class="pill p-blue">Редкие</span></td><td>3, две улучшенные</td><td>35%</td></tr>
+        <tr><td><span class="pill p-purple">Эпические</span></td><td>3 улучшенные</td><td>50%</td></tr>
+        <tr><td><span class="pill p-amber">Легендарные</span></td><td>3 улучшенные + максимальный бонус</td><td>75%</td></tr>
+        </tbody></table>
+      </div>
+    </div>
+    <div class="good">Бонус от качественной технологии — постоянный пассивный бонус к постройке которую открывает эта технология.</div>
+  </div>
+  <div id="t2" class="page" style="display:none">
+    <h2>Базовые технологии</h2>
+    <div class="card green"><h3>Доступны сразу</h3><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+      <span class="pill p-green">Электроника</span><span class="pill p-green">Энергия пара</span>
+      <span class="pill p-green">Авт. исследовательский пакет</span><span class="pill p-green">Автоматизация 1</span>
+      <span class="pill p-green">Фонарь</span><span class="pill p-green">Каменная стена</span>
+      <span class="pill p-green">Логистика 1</span><span class="pill p-green">Электрический бур</span>
+      <span class="pill p-green">Ремонтный комплект</span><span class="pill p-green">Пулемётная турель</span>
+      <span class="pill p-green">Радар</span><span class="pill p-green">Производство стали</span>
+      <span class="pill p-green">Лёгкая броня</span>
+    </div></div>
+    <div class="card amber"><h3>Стартовый гарантированный обломок</h3><p>Рядом со стартовой точкой на Наувисе. Содержит Военную промышленность 1 — дробовик, пистолет-пулемёт, патроны. Обучает механике поиска чертежей с первых минут игры.</p>
+    <div class="diary" style="margin-top:8px"><div class="dl">Инженер находит обломок</div>"Нашёл какие-то обломки. Чьи-то чертежи — дробовик, патроны. Зачем мне это... хотя лишним не будет."</div>
+    <div class="diary"><div class="dl">После первого кусаки</div>"Вот зачем. Понял."</div></div>
+    <div class="card red"><h3>Скрыто</h3><div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+      <span class="pill p-red">Военная промышленность 1</span><span class="pill p-red">Быстрые манипуляторы</span>
+      <span class="pill p-red">Тяжёлая броня</span><span class="pill p-red">Бонусы к урону/скорострельности</span>
+      <span class="pill p-red">Всё за зелёные колбы и выше</span>
+    </div></div>
+  </div>
+  <div id="t3" class="page" style="display:none">
+    <h2>Дешифратор и ЛЛК</h2>
+    <div class="card purple"><h3>Дешифратор — улучшенная лаборатория</h3>
+      <p style="margin-bottom:8px">Открывается через исследование на Наувисе. Не заменяет обычную лабораторию — работает как шлюз перед ней. Процесс двухэтапный.</p>
+      <div class="two">
+        <div>
+          <div class="sl" style="margin-top:0">Этап 1 — Дешифратор</div>
+          <div class="stp"><div class="sn">1</div><div><div class="st">Вставить карту данных</div><div class="sd">Тип карты → категория технологий. Качество карты → шанс лучшего качества технологий.</div></div></div>
+          <div class="stp"><div class="sn">2</div><div><div class="st">Загрузить колбы</div><div class="sd">Только красные → уровень 1. Красные+зелёные → 1-2. И так далее.</div></div></div>
+          <div class="stp"><div class="sn">3</div><div><div class="st">Окно выбора</div><div class="sd">Три карточки с иконкой, названием и описанием. Рамка цвета качества: серая/зелёная/синяя/фиолетовая/золотая.</div></div></div>
+          <div class="stp"><div class="sn">4</div><div><div class="st">Выбрать или обновить</div><div class="sd">"Выбрать" — технология разблокируется в дереве. "Обновить" — новый список, риск поломки карты.</div></div></div>
+        </div>
+        <div>
+          <div class="sl" style="margin-top:0">Этап 2 — Обычная лаборатория</div>
+          <div class="stp"><div class="sn">1</div><div><div class="st">Технология в дереве</div><div class="sd">После дешифратора технология появляется в дереве как обычная исследуемая.</div></div></div>
+          <div class="stp"><div class="sn">2</div><div><div class="st">Исследовать через колбы</div><div class="sd">Стандартный процесс — колбы тратятся в лаборатории. Цена зависит от качества.</div></div></div>
+          <div class="stp"><div class="sn">3</div><div><div class="st">Технология активна</div><div class="sd">Доступна для постройки и использования.</div></div></div>
+        </div>
+      </div>
+      <div class="note">Дешифратор разблокирует. Лаборатория исследует. Оба этапа обязательны.</div>
+    </div>
+    <div class="card amber"><h3>Качественные технологии — цена и разблокировка</h3>
+      <p style="margin-bottom:8px">Разблокировал редкую версию → автоматически разблокируются необычная и обычная. Игрок сам выбирает какую исследовать в лаборатории.</p>
+      <table class="tbl"><thead><tr><th>Качество</th><th>Цена исследования</th><th>Бонус</th></tr></thead><tbody>
+        <tr><td><span class="pill p-gray">Обычная</span></td><td>×1 стандартная цена</td><td>Нет</td></tr>
+        <tr><td><span class="pill p-green">Необычная</span></td><td>×1.5 колб</td><td>Малый бонус к постройке</td></tr>
+        <tr><td><span class="pill p-blue">Редкая</span></td><td>×2 колб</td><td>Средний бонус</td></tr>
+        <tr><td><span class="pill p-purple">Эпическая</span></td><td>×3 колб</td><td>Большой бонус</td></tr>
+        <tr><td><span class="pill p-amber">Легендарная</span></td><td>×5 колб</td><td>Максимальный бонус</td></tr>
+      </tbody></table>
+      <div class="info">Стратегия: найти легендарную карту но не хватает колб — исследовать обычную сейчас или копить на легендарную? Выбор за игроком.</div>
+    </div>
+    <div class="card teal"><h3>ЛЛК — Логический лабораторный комплекс</h3><ul>
+      <li>Без тех данных — тратит колбы с шансом 10-20% (настраивается)</li>
+      <li>При успехе — выбор из 2 технологий (не 3), случайная категория</li>
+      <li>Всегда обычное качество — бонусов нет</li>
+      <li>Колбы тратятся даже при неудаче</li>
+    </ul><div class="note">Страховка когда тех данных нет. Дешифратор всегда выгоднее.</div></div>
+  </div>
+  <div id="t4" class="page" style="display:none">
+    <h2>Категории тех данных</h2>
+    <div class="three">
+      <div class="card gray"><h3>Автоматизация</h3><div class="sub">Сборочные машины, крафт</div></div>
+      <div class="card gray"><h3>Логистика</h3><div class="sub">Конвейеры, манипуляторы</div></div>
+      <div class="card gray"><h3>Добыча</h3><div class="sub">Буры, насосы</div></div>
+      <div class="card gray"><h3>Производство</h3><div class="sub">Плавка, переработка, химия</div></div>
+      <div class="card gray"><h3>Электроэнергия</h3><div class="sub">Генераторы, аккумуляторы</div></div>
+      <div class="card gray"><h3>Военное дело</h3><div class="sub">Оружие, броня, турели</div></div>
+      <div class="card gray"><h3>Роботехника</h3><div class="sub">Дроны, роботодоки</div></div>
+      <div class="card gray"><h3>Поезда</h3><div class="sub">Рельсы, локомотивы</div></div>
+      <div class="card gray"><h3>Химия</h3><div class="sub">Нефть, пластик, взрывчатка</div></div>
+      <div class="card blue"><h3>Космические</h3><div class="sub">Платформы, ракеты, спутники</div></div>
+      <div class="card green"><h3>Биотехнологии</h3><div class="sub">Глеба, Aquara, органика</div></div>
+      <div class="card teal"><h3>Криотехнологии</h3><div class="sub">Аквило, Nivar, холод</div></div>
+      <div class="card amber"><h3>Энергетика SA+</h3><div class="sub">Solaris, Echaris</div></div>
+      <div class="card red"><h3>Военные SA+</h3><div class="sub">Оружие всех планет SA+</div></div>
+      <div class="card purple"><h3>Инопланетные</h3><div class="sub">Только из подземелий, уникальные</div></div>
+    </div>
+  </div>
+</div>
+
+<div id="diary" class="page">
+  <div class="sub-nav">
+    <button class="sub-btn active" style="background:#f3e8ff;color:#7e22ce" onclick="T('d1',this,'#f3e8ff','#7e22ce')">Концепция</button>
+    <button class="sub-btn" onclick="T('d2',this,'#fdf4ff','#7e22ce')">Предыстория</button>
+    <button class="sub-btn" onclick="T('d3',this,'#fef3c7','#92400e')">Находки</button>
+    <button class="sub-btn" onclick="T('d4',this,'#dcfce7','#15803d')">Технологии</button>
+    <button class="sub-btn" onclick="T('d5',this,'#fee2e2','#991b1b')">Живность</button>
+  </div>
+  <div id="d1" class="page active">
+    <h2>Дневник инженера</h2>
+    <div class="card purple"><p>Отдельный UI — своя вкладка. Динамический контент. Инженер разбирается в происходящем вместе с игроком — иногда ошибается, иногда не понимает находку.</p></div>
+    <div class="three">
+      <div class="card blue"><h3>Бортовые журналы</h3><div class="sub">Из обломков других инженеров. Истории других экспедиций. Намёки на планеты SA+.</div></div>
+      <div class="card teal"><h3>Инопланетные данные</h3><div class="sub">Сначала зашифрованы. После расшифровки в дешифраторе — текст меняется.</div></div>
+      <div class="card amber"><h3>Комментарии инженера</h3><div class="sub">На находки, технологии, мобов. Зависят от контекста и планеты.</div></div>
+    </div>
+    <div class="card gray"><h3>Компании в мире</h3>
+      <table class="table"><thead><tr><th>Компания</th><th>Стиль записей</th></tr></thead><tbody>
+      <tr><td><strong>Ironveil Industries</strong></td><td>Формальный, корпоративный</td></tr>
+      <tr><td><strong>Kessel Corp</strong></td><td>Технический, сухой</td></tr>
+      <tr><td><strong>Aether Dynamics</strong></td><td>Научный, подробный</td></tr>
+      <tr><td><strong>Redstone Collective</strong></td><td>Военный, краткий</td></tr>
+      <tr><td><strong>Novum Frontier</strong></td><td>Восторженный, много журналов</td></tr>
+      <tr><td><strong>Cascade Systems</strong></td><td>Инженерный, точный</td></tr>
+      <tr><td><strong>Одиночки</strong></td><td>Хаотичный, эмоциональный</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+  <div id="d2" class="page" style="display:none">
+    <h2>Предыстория инженера</h2>
+    <div class="card purple"><p>При первом нажатии Tab — выбор предыстории. Не влияет на геймплей — только тон дневника на протяжении всей игры.</p></div>
+    <div class="diary"><div class="dl">Корпоративный сотрудник</div>"Навигационная система дала сбой. Компания выдала стандартный набор чертежей перед вылетом. Пистолет тоже есть. Не знаю пригодится ли тут."</div>
+    <div class="diary"><div class="dl">Одиночка</div>"Сам виноват. Навигационные данные купил у перекупщика. Чертежи собирал сам по крупицам. Пистолет при себе. На всякий случай."</div>
+    <div class="diary"><div class="dl">Человек с историей</div>"Координаты оказались липовыми. Чертежи впрочем настоящие — это хоть радует. Пистолет заряжен. Тихо пока что."</div>
+  </div>
+  <div id="d3" class="page" style="display:none">
+    <h2>Комментарии при находках</h2>
+    <div class="diary"><div class="dl">Обломки с чертежами для холодной планеты — Наувис</div>"Кто-то серьёзно готовился к экстремальному холоду. Значит такое место существует в этой системе."</div>
+    <div class="diary"><div class="dl">Обломки на Solaris</div>"Какого чёрта тут делает целый корабль? Как он не расплавился при посадке сюда? Это не должно быть возможным."</div>
+    <div class="diary"><div class="dl">Обломки на Echaris с военными данными</div>"Столько военных чертежей. От чего они так серьёзно защищались? Роботы? Буря? Или что-то ещё?"</div>
+    <div class="diary"><div class="dl">Первое инопланетное подземелье</div>"Это явно не человеческая постройка. Геометрия неправильная. И всё ещё работает спустя тысячи лет."</div>
+    <div class="diary"><div class="dl">Инопланетные данные — до расшифровки</div>"▓▓▓▓ ◈◉◈ ▓▓▓ ◉◈◉◈◉ ▓▓▓▓▓ ◈◉◈◉◈"</div>
+    <div class="diary"><div class="dl">Инопланетные данные — после расшифровки</div>"Протокол консервации узла 7-Альфа. Расчётный срок работы без обслуживания — 4200 циклов звезды."</div>
+  </div>
+  <div id="d4" class="page" style="display:none">
+    <h2>Комментарии при открытии технологий</h2>
+    <div class="diary"><div class="dl">Улучшение — Сборочная машина Mk2</div>"Чертёж Mk2 от компании [название]. Значительно лучше моей Mk1. Хотя тут слоты для каких-то модулей. Интересно для чего они."</div>
+    <div class="diary"><div class="dl">Совершенно новое — Роботодок</div>"Запускает летающих роботов которые сами строят и перевозят. Это меняет всё. Почему у меня не было этого с самого начала."</div>
+    <div class="diary"><div class="dl">Чертёж для другой планеты</div>"Стоп. Криозащитный купол. Значит место с экстремальным холодом существует в этой системе."</div>
+    <div class="diary"><div class="dl">Военная технология</div>"Серьёзное оружие. Обычных кусак таким не останавливают. Предыдущий владелец знал с чем столкнётся."</div>
+    <div class="diary"><div class="dl">Инопланетная технология</div>"Это не человеческая разработка. Принцип понятен наполовину. Но результат впечатляет."</div>
+    <div class="diary"><div class="dl">Дубликат</div>"Снова тот же чертёж. Хотя качество лучше — предыдущий владелец работал в лучших условиях."</div>
+  </div>
+  <div id="d5" class="page" style="display:none">
+    <h2>Комментарии про живность</h2>
+    <div class="sl">Наувис — кусаки</div>
+    <div class="diary"><div class="dl">Первый убитый</div>"Что это вообще такое. Живое, агрессивное, не радо моему присутствию."</div>
+    <div class="diary"><div class="dl">После 10 убийств</div>"Реагируют на загрязнение. Чем грязнее — тем их больше. Надо следить за фильтрами."</div>
+    <div class="diary"><div class="dl">После 50 убийств</div>"Уже не замечаю. Рутина."</div>
+    <div class="sl">Solaris</div>
+    <div class="diary"><div class="dl">Первый Скорч</div>"Оно вышло из лавы. Живое. Из лавы. Как это работает биологически?"</div>
+    <div class="diary"><div class="dl">После 10 Скорчей</div>"Быстрые. Опасны в группе. Держаться подальше от гнёзд."</div>
+    <div class="diary"><div class="dl">Первый Магмар</div>"Этот плюётся лавой. Ожог через броню очень неприятный."</div>
+    <div class="diary"><div class="dl">Первый Молтен</div>"Огромный. Гнездо светилось ярче перед тем как вылез — запомнить этот сигнал."</div>
+    <div class="sl">Echaris — Механиты</div>
+    <div class="diary"><div class="dl">Первый Sentinel-09</div>"Робот. Патрулирует как будто выполняет задание. Интересно кто его запустил."</div>
+    <div class="diary"><div class="dl">Первый Disruptor</div>"ЭМИ волна вырубила всех дронов разом. Надо думать как с ним работать."</div>
+    <div class="diary"><div class="dl">Первый вызов подкрепления</div>"Не успел убить до сигнала. Сразу пятеро. Overseer умирает первым и быстро — теперь знаю."</div>
+    <div class="sl">Aquara</div>
+    <div class="diary"><div class="dl">Первая Рябь</div>"Что-то атаковало снизу. Оставляет ядовитый след в воде."</div>
+    <div class="diary"><div class="dl">Первый Прибой</div>"Водяная струя сбила с ног. Снайпер подводного мира."</div>
+    <div class="diary"><div class="dl">Первая Бездна</div>"Огромное. Волна повредила три постройки у берега. Держаться от глубоких зон."</div>
+    <div class="sl">Nivar</div>
+    <div class="diary"><div class="dl">Первая Вьюга</div>"Появилась из ниоткуда в снегу. Не видно на белом. Очень крепкая. Что она ест на этой пустой планете?"</div>
+    <div class="diary"><div class="dl">Вьюга в криобурю</div>"В буран их стаи. Не выходить из базы во время бури. Серьёзно."</div>
+    <div class="diary"><div class="dl">Первый Ледяной страж</div>"Ледяное дыхание остановило три постройки мгновенно. Отступил. Не стыжусь."</div>
+    <div class="diary"><div class="dl">Первый Иней в пещере</div>"Что-то атаковало в темноте. Реагирует на тепло моего обогревателя."</div>
+    <div class="diary"><div class="dl">Первый Бездонный</div>"Не видел пока не зашёл слишком глубоко. Самые ценные залежи охраняет самое опасное существо. Конечно."</div>
+
+    <div class="sl">Качество технологий</div>
+    <div class="diary"><div class="dl">Необычная технология</div>"Та же технология но лучше. Чертёж детальнее, материалы качественнее. Интересно кто это делал."</div>
+    <div class="diary"><div class="dl">Редкая технология</div>"Редкий чертёж. Видно что над ним работали долго — каждая деталь выверена. Такое просто так не выбрасывают."</div>
+    <div class="diary"><div class="dl">Эпическая технология</div>"Не понимаю как это вообще оказалось в обломках. Такой чертёж должен был храниться в сейфе."</div>
+    <div class="diary"><div class="dl">Легендарная технология</div>"Это... идеальная работа. Я держу в руках что-то что большинство инженеров никогда не видели. Осторожно кладу в самый защищённый контейнер."</div>
+
+    <div class="sl">Первая добыча ресурсов</div>
+    <div class="diary"><div class="dl">Первая нефть</div>"Первая нефть пошла. Теперь начнётся настоящее производство."</div>
+    <div class="diary"><div class="dl">Серная кислота (Вулканус)</div>"Осторожно. Это не нефть — это растворит всё что не из правильного материала."</div>
+    <div class="diary"><div class="dl">Обычная лава (Вулканус)</div>"Качаю лаву. Горячо но машина справляется. Главное не трогать трубы руками."</div>
+    <div class="diary"><div class="dl">Сверхгорячая лава (Solaris)</div>"Это уже не та лава что на Вулканусе. Обычный насос бы расплавился за минуту. Хорошо что додумался поставить правильное оборудование."</div>
+    <div class="diary"><div class="dl">Криолит (Nivar)</div>"Что-то из-подо льда. Странный материал — на ощупь холоднее чем должен быть."</div>
+    <div class="diary"><div class="dl">Нивалит (Nivar)</div>"Проводит ток без потерь при таком холоде. Удивительный материал. Жаль что добыть его так сложно."</div>
+
+    <div class="sl">Первая постройка добывающих машин</div>
+    <div class="diary"><div class="dl">Первая нефтекачалка</div>"Поставил первую нефтекачалку. Запах уже неприятный но производство того требует."</div>
+    <div class="diary"><div class="dl">Нефтекачалка на серную кислоту</div>"Та же машина что качает нефть — но тут всё в защитном покрытии. Правильное решение."</div>
+    <div class="diary"><div class="dl">Нефтекачалка Mk2</div>"Mk2 работает заметно быстрее. Зря я так долго тянул с заменой."</div>
+    <div class="diary"><div class="dl">Сверхпрочный насос на Solaris</div>"Специальный насос для сверхгорячей лавы. Выглядит внушительно. Интересно на сколько его хватит."</div>
+    <div class="diary"><div class="dl">Обычный насос на Solaris (ошибка)</div>"Стандартный насос на ЭТОЙ лаве? Серьёзно? Он продержался четыре секунды. Нужно специальное оборудование."</div>
+    <div class="diary"><div class="dl">Глубинный бур (Nivar)</div>"Бурю сквозь лёд. Звук неприятный — как будто планета возражает."</div>
+    <div class="diary"><div class="dl">Подводный бур (Aquara)</div>"Добываю что-то со дна океана. Никогда не думал что буду заниматься таким."</div>
+
+    <div class="sl">Запуски поискового спутника</div>
+    <div class="diary"><div class="dl">Первый запуск спутника 1 поколения</div>"Запустил первый спутник. Ненадёжная конструкция если честно — но лучше пока нет. Посмотрим что найдёт."</div>
+    <div class="diary"><div class="dl">Спутник не нашёл ничего</div>"Ничего. Упал обратно. Значит либо там ничего нет либо спутник был слишком плохой. Скорее второе."</div>
+    <div class="diary"><div class="dl">Несколько провалов подряд</div>"Уже пятый спутник потерян. Но каждый раз я понимаю что делал не так. Следующий будет лучше."</div>
+    <div class="diary"><div class="dl">Перед открытием спутника 2 поколения</div>"Наконец-то. Все эти потери были не зря — теперь я знаю как сделать это правильно."</div>
+
+    <div class="sl">Открытие планет и спутников</div>
+    <div class="diary"><div class="dl">Слабый сигнал — спутник 1 поколения</div>"Спутник что-то нашёл перед тем как упал. Сигнал слабый — только направление и примерное расстояние. Там что-то есть. Надо разведать подробнее."</div>
+    <div class="diary"><div class="dl">Полная разведка — горячая планета (Solaris)</div>"Значит там очень горячо. Очень. Нужна серьёзная подготовка прежде чем туда лететь."</div>
+    <div class="diary"><div class="dl">Полная разведка — Echaris</div>"Спутник зафиксировал постоянные электромагнитные бури и... движение на поверхности? Там что-то есть. Живое или нет — пока неясно."</div>
+    <div class="diary"><div class="dl">Полная разведка — Aquara</div>"Почти полностью покрыта водой. Острова есть но маленькие. Интересно что живёт в той воде."</div>
+    <div class="diary"><div class="dl">Полная разведка — Nivar</div>"Лёд. Везде лёд. И судя по данным — очень холодно. Даже по меркам космоса."</div>
+    <div class="diary"><div class="dl">Первое посещение любой новой планеты</div>"Вот я и здесь. Данные с орбиты одно — стоять на поверхности совсем другое."</div>
+
+    <div class="sl">Производство и база</div>
+    <div class="diary"><div class="dl">База работает автономно впервые</div>"Стою и смотрю как всё крутится без моего участия. Конвейеры едут, манипуляторы работают, роботы летают. Ради этого момента я всё это и строил."</div>
+    <div class="diary"><div class="dl">Первый поезд</div>"Первый поезд пошёл. Громко. Очень громко. Но везёт столько сколько мне раньше не снилось."</div>
+    <div class="diary"><div class="dl">Первый ядерный реактор</div>"Запустил реактор. Теперь проблема энергии решена надолго. Главное не забывать про охлаждение."</div>
+    <div class="diary"><div class="dl">Дедлок производства</div>"Всё встало. Железо ждёт медь, медь ждёт железо, железо ждёт медь. Как я вообще допустил это? Сижу и думаю с чего начать распутывать."</div>
+    <div class="diary"><div class="dl">Первый робот-строитель</div>"Маленький летающий помощник. Строит сам, чинит сам. Почему я не сделал это раньше."</div>
+
+    <div class="sl">Космос и платформы</div>
+    <div class="diary"><div class="dl">Первый запуск ракеты</div>"Ракета ушла. Всё что я строил последние часы — в этом моменте. Смотрю в небо пока не скрылась из виду."</div>
+    <div class="diary"><div class="dl">Первое время на платформе</div>"Вот значит как выглядит космос изнутри. Тихо. Очень тихо. И очень далеко до всего."</div>
+    <div class="diary"><div class="dl">Первое столкновение с астероидом</div>"Большой кусок камня прошёл через секцию хранения. Турели справились но было неприятно. Надо усилить оборону."</div>
+    <div class="diary"><div class="dl">Первая межпланетная доставка</div>"Отправил груз. Теперь жду. Межпланетная логистика — это отдельное искусство."</div>
+
+    <div class="sl">Захват ульев</div>
+    <div class="diary"><div class="dl">Первый захват улья на Наувисе</div>"Выстрелил снарядом в гнездо кусак. Не знал чего ожидать. Оно... успокоилось? Теперь сидит и ждёт биофлюс. Странное ощущение."</div>
+    <div class="diary"><div class="dl">Улей умер от голода</div>"Забыл про биофлюс. Улей вернулся к врагам. Теперь снова надо его захватывать. Не забывать — это не просто постройка, это живое."</div>
+    <div class="diary"><div class="dl">Первый захват улья на SA+ планете</div>"Та же механика что на Наувисе но существо совсем другое. Интересно насколько оно понимает что происходит."</div>
+
+    <div class="sl">Смерть и опасность</div>
+    <div class="diary"><div class="dl">Первая смерть от кусак</div>"Зашёл слишком близко к гнезду. Их было много. Это моя ошибка — надо было смотреть на карту."</div>
+    <div class="diary"><div class="dl">Первая смерть от лавы (Solaris)</div>"Один неверный шаг. Лава быстрее чем кажется. Хорошо что чертежи не сгорели вместе со мной."</div>
+    <div class="diary"><div class="dl">Первая смерть от холода (Nivar)</div>"Ушёл слишком далеко от базы. Обогреватель не успел. Холод здесь не шутит — он просто убивает."</div>
+    <div class="diary"><div class="dl">Выжил еле-еле</div>"Здоровья осталось на один удар. Отступил. Иногда отступить — это правильное решение."</div>
+
+    <div class="sl">Находки и исследования</div>
+    <div class="diary"><div class="dl">Первая расшифровка инопланетных данных</div>"Первый раз читаю текст не написанный человеком. Странное ощущение. Кто-то это писал. Кто-то думал этими словами."</div>
+    <div class="diary"><div class="dl">Журнал последней записи погибшего инженера</div>"Последняя запись обрывается на полуслове. Понятно что случилось дальше. Молчу какое-то время. Потом иду дальше — у меня нет другого выбора."</div>
+    <div class="diary"><div class="dl">Обломки своей компании</div>"Это наш корабль. Регистрационный номер совпадает. Значит кто-то из наших был здесь до меня. Интересно что с ним случилось. Ищу журнал."</div>
+
+    <div class="sl">Юмор и мелочи</div>
+    <div class="diary"><div class="dl">Случайно выбросил что-то ценное</div>"Нет. Нет нет нет. Только что выбросил редкий чертёж. Он улетел в космос. Надеюсь его подберёт сборщик метеоритов. Когда-нибудь."</div>
+    <div class="diary"><div class="dl">Тысячная постройка</div>"Не считал специально — просто увидел счётчик. Тысяча построек. С одним пистолетом я сюда прилетел."</div>
+    <div class="diary"><div class="dl">Долго не возвращался на Наувис</div>"Когда я последний раз был дома? Смотрю на карту. Наувис — маленькая точка в углу. Надо бы заехать. Проверить что там не развалилось без меня."</div>
+  </div>
+</div>
+
+<div id="questions" class="page">
+  <h2>Открытые вопросы</h2>
+  <p style="margin-bottom:10px;font-size:12px;color:#555">Отвечай по коду — закроем вопрос и обновим документ.</p>
+
+  <div class="sl">Закрытые</div>
+  <div class="card green">
+    <table class="table"><thead><tr><th>Код</th><th>Ответ</th></tr></thead><tbody>
+    <tr><td><strong>G1</strong></td><td>Кислород в мультиплеере: у каждого своя система</td></tr>
+    <tr><td><strong>G2</strong></td><td>3 настройки скорости смерти + 3 настройки объёма баллона</td></tr>
+    <tr><td><strong>G3</strong></td><td>Стандарт: 10 запусков. Хардкор: 30-50</td></tr>
+    <tr><td><strong>G4</strong></td><td>Мусор глобальный. Подобрал один — у остальных исчезает</td></tr>
+    <tr><td><strong>S2</strong></td><td>Лучей 1-5, настраивается</td></tr>
+    <tr><td><strong>S3</strong></td><td>Много маленьких или один на планету — настраивается</td></tr>
+    <tr><td><strong>S4</strong></td><td>Технология улучшения капсулы. Громоздкое — только ракетой.</td></tr>
+    <tr><td><strong>E1-E5</strong></td><td>Ресурсы и+уникальные. Руда+переработка. Сложность от расстояния. Фульгорианцы/Механиты. Случайная генерация.</td></tr>
+    <tr><td><strong>A2-A4</strong></td><td>Буря снижает производительность. Якорь=ротор+динамо. Нужны биофлюс и углеволокно с Глебы.</td></tr>
+    <tr><td><strong>N2-N4</strong></td><td>Нужны криолампы. Пещерные слышат вибрации бури. Ресурсы Аквило нужны на Nivar.</td></tr>
+    <tr><td><strong>T1-T4</strong></td><td>ЛЛК: 10-20%. Расшифровка: отдельный процесс. Повтор: список может измениться. Межпланетные зависимости — см. вкладку Техи планет/Глобальные.</td></tr>
+    <tr><td><strong>H1</strong></td><td>Глеба — базовая (ваниль). SA+ — перекалибровка для каждой планеты.</td></tr>
+    <tr><td><strong>H4</strong></td><td>Echaris: Механиты не живые, захвата нет</td></tr>
+    <tr><td><strong>F1</strong></td><td>Сверхпрочный насос: 2400/с</td></tr>
+    <tr><td><strong>F3</strong></td><td>Трубы сверхвысоких температур: глобальная</td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="sl">Закрыты — Технологии планет, биофлюс, захват, конвейер</div>
+  <div class="card green">
+  <table class="tbl"><thead><tr><th>Код</th><th>Ответ</th></tr></thead><tbody>
+  <tr><td><strong>S1</strong></td><td>Список технологий Solaris утверждён — золотая середина по количеству</td></tr>
+  <tr><td><strong>A1</strong></td><td>Список технологий Aquara утверждён</td></tr>
+  <tr><td><strong>N1</strong></td><td>Список технологий Nivar утверждён</td></tr>
+  <tr><td><strong>H2</strong></td><td>Биофлюс производится только на Глебе. Доставляется готовым на другие планеты.</td></tr>
+  <tr><td><strong>H3</strong></td><td>Во время криобури — очень малый шанс что улей испортится или взорвётся при захвате</td></tr>
+  <tr><td><strong>F2</strong></td><td>Жаропрочный конвейер: 60/с</td></tr>
+  </tbody></table>
+  </div>
+  <div class="good" style="margin-top:12px">Все открытые вопросы закрыты. Документ готов как база для разработки.</div>
+</div>
+
+<script>
+function S(id,btn){
+  document.querySelectorAll('body > .page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.top-btn').forEach(function(b){b.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+  var subs=document.getElementById(id).querySelectorAll(':scope > .page');
+  subs.forEach(function(p,i){p.style.display=i===0?'block':'none';});
+}
+function T(id,btn,bg,color){
+  var parent=btn.closest('.page');
+  parent.querySelectorAll(':scope > .page').forEach(function(p){p.style.display='none';});
+  parent.querySelectorAll('.sub-btn').forEach(function(b){
+    b.classList.remove('active');b.style.background='';b.style.color='';
+  });
+  document.getElementById(id).style.display='block';
+  btn.classList.add('active');btn.style.background=bg;btn.style.color=color;
+}
+</script>
+</body></html>
