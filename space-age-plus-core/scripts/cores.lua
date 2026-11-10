@@ -6,6 +6,9 @@ local cores = {}
 
 cores.TICK_INTERVAL = 60
 
+--- Вызывается, когда у команды включается бонус ядра: (force, planet). Задаёт control.lua.
+cores.on_bonus = nil
+
 local HOLDERS = { ["sap-ancient-pedestal"] = true, ["sap-ancient-nexus"] = true }
 
 local registry_cache
@@ -100,6 +103,7 @@ function cores.on_tick()
       if not before[planet] then
         apply(force, planet, 1)
         force.print({ "sap-cores.bonus-on", { "space-location-name." .. planet } })
+        if cores.on_bonus then cores.on_bonus(force, planet) end
       end
     end
     for planet in pairs(before) do

@@ -228,6 +228,9 @@ function player_tests.register(steps, check, finish)
     check("player dungeon: stepping on a trap hurts", p.character and p.character.health < storage.pt_trap_health,
           p.character and p.character.health)
     if storage.pt_back then p.teleport(storage.pt_back) end
+    local entries = {}
+    for _, k in pairs(remote.call("sap-diary", "entries", p.force.name)) do entries[k] = true end
+    check("player diary: trap entry", entries["dungeon-trap"] == true)
   end
 
   steps[1160] = function()
@@ -277,6 +280,21 @@ function player_tests.register(steps, check, finish)
     frame = p.gui.relative["sap_story_frame"]
     check("player story: chosen ending disabled, others enabled", frame ~= nil and not frame.restore.enabled
           and frame.seal.enabled and frame.unity == nil)
+  end
+
+  -- Смерть в подземелье (последней: дальше персонажа нет).
+  steps[1260] = function()
+    local p = player()
+    local entrance = storage.pt_entrance
+    if entrance and entrance.valid then remote.call("sap-core", "dungeon_enter", p.index, entrance) end
+    if p.character then p.character.die() end
+  end
+
+  steps[1280] = function()
+    local p = player()
+    local entries = {}
+    for _, k in pairs(remote.call("sap-diary", "entries", p.force.name)) do entries[k] = true end
+    check("player diary: death in a dungeon", entries["dungeon-death"] == true)
   end
 
   steps[1300] = function() finish() end

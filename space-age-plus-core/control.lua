@@ -10,6 +10,9 @@ local no_delivery = require("scripts.no_delivery")
 local dungeon = require("scripts.dungeon")
 local story = require("scripts.story")
 local cores = require("scripts.cores")
+local events = require("scripts.events")
+dungeon.on_event = events.handle
+cores.on_bonus = function(force, planet) events.handle("pedestal", force, planet) end
 dungeon.on_core_taken = story.on_core_taken
 
 script.on_init(function()
@@ -88,6 +91,7 @@ end
 script.on_event(defines.events.on_entity_died, function(event)
   quality_bonus.on_removed(event)
   diary.on_entity_died(event)
+  dungeon.on_entity_died(event)
 end)
 
 -- Дневник: остальные события
@@ -96,7 +100,10 @@ script.on_event(defines.events.on_player_crafted_item, diary.on_player_crafted_i
 script.on_event(defines.events.on_player_mined_item, diary.on_player_mined_item)
 script.on_event(defines.events.on_rocket_launched, diary.on_rocket_launched)
 script.on_event(defines.events.on_player_changed_surface, diary.on_player_changed_surface)
-script.on_event(defines.events.on_player_died, diary.on_player_died)
+script.on_event(defines.events.on_player_died, function(event)
+  diary.on_player_died(event)
+  dungeon.on_player_died(event)
+end)
 script.on_nth_tick(diary.TICK_INTERVAL, diary.on_tick)
 script.on_nth_tick(120 + 7, techtree.on_tick)
 script.on_event(defines.events.on_cargo_pod_finished_descending, diary.on_cargo_pod_finished_descending)
@@ -146,7 +153,9 @@ remote.add_interface("sap-core", {
   end,
   dungeon_enter = function(player_index, entrance) dungeon.enter(game.get_player(player_index), entrance) end,
   dungeon_leave = function(player_index) dungeon.leave(game.get_player(player_index)) end,
-  dungeon_reset = function(planet) return dungeon.reset(planet) end,
+  dungeon_reset = function(planet, player_index)
+    return dungeon.reset(planet, player_index and game.get_player(player_index) or nil)
+  end,
   dungeon_can_reset = function(planet) return dungeon.can_reset(planet) end,
   dungeon_record = function(planet)
     local r = storage.dungeons and storage.dungeons.planets[planet]

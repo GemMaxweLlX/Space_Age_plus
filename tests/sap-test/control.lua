@@ -1156,6 +1156,11 @@ steps[29000] = function()
 end
 
 -- Подземелья древней расы ---------------------------------------------------------------
+local function has_entry_early(force_name, key)
+  for _, k in pairs(remote.call("sap-diary", "entries", force_name)) do if k == key then return true end end
+  return false
+end
+
 local DUNGEON_PLANETS = { "nauvis", "vulcanus", "fulgora", "gleba", "aquilo", "solaris", "echaris", "aquara", "nivar" }
 
 steps[9600] = function()
@@ -1255,6 +1260,11 @@ steps[9600] = function()
 end
 
 steps[9700] = function()
+  check("diary: first dungeon door", has_entry_early("player", "dungeon-door"))
+  check("diary: the Warden", has_entry_early("player", "dungeon-warden"))
+  local keeper = game.get_surface("sap-dungeon-nauvis").find_entities_filtered({ name = "sap-ancient-keeper", limit = 1 })[1]
+  if keeper then keeper.die("player") end
+  check("diary: the Keeper", keeper ~= nil and has_entry_early("player", "dungeon-keeper"))
   for _, planet in pairs(DUNGEON_PLANETS) do
     if game.planets[planet] then
       local rec = remote.call("sap-core", "dungeon_record", planet)
@@ -1365,6 +1375,7 @@ end
 steps[11780] = function()
   local force = game.forces.player
   check("cores: pedestal technology unlocked by taking a core", force.technologies["sap-ancient-pedestal"].researched)
+  check("diary: core on the pedestal", has_entry_early("player", "dungeon-pedestal"))
   check("cores: core in pedestal gives the planet bonus",
         math.abs(force.character_health_bonus - storage.health_bonus - 100) < 0.01, force.character_health_bonus)
   storage.pedestal.get_inventory(defines.inventory.chest).clear()

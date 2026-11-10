@@ -14,6 +14,28 @@ local dungeon = {}
 
 --- Вызывается, когда древнее ядро забрано из последнего зала: (force, planet). Задаёт control.lua.
 dungeon.on_core_taken = nil
+--- События подземелий для дневника и достижений: (kind, force, planet, player?). Задаёт control.lua.
+--- kind: door, warden, trap, keeper, death, expedition.
+dungeon.on_event = nil
+
+--- Команды игроков на поверхности (или команда player, если там никого).
+local function forces_on(surface)
+  local forces = {}
+  for _, player in pairs(game.connected_players) do
+    if surface and player.surface == surface then forces[player.force.name] = player.force end
+  end
+  if next(forces) == nil then forces.player = game.forces.player end
+  return forces
+end
+
+local function notify(kind, planet, surface, player)
+  if not dungeon.on_event then return end
+  if player then
+    dungeon.on_event(kind, player.force, planet, player)
+  else
+    for _, force in pairs(forces_on(surface)) do dungeon.on_event(kind, force, planet) end
+  end
+end
 
 dungeon.TICK_INTERVAL = 60
 
@@ -448,13 +470,7 @@ local function check_cores(s)
     if cache and not record.core_taken and (record.run or 0) == 0
         and (not cache.valid or cache.get_inventory(defines.inventory.chest).get_item_count(record.core_item or "sap-ancient-core") == 0) then
       record.core_taken = true
-      local forces = {}
-      local surface = game.get_surface(record.surface)
-      for _, player in pairs(game.connected_players) do
-        if surface and player.surface == surface then forces[player.force.name] = player.force end
-      end
-      if next(forces) == nil then forces.player = game.forces.player end
-      for _, force in pairs(forces) do
+      for _, force in pairs(forces_on(game.get_surface(record.surface))) do
         if dungeon.on_core_taken then dungeon.on_core_taken(force, planet) end
         local pedestal = force.technologies["sap-ancient-pedestal"]
         if pedestal and not pedestal.researched then force.script_trigger_research("sap-ancient-pedestal") end
@@ -520,11 +536,12 @@ function dungeon.on_tick()
         end
       end
       if open then
+        local door_surface = d.door.surface
         d.door.destroy()
         d.lock.disabled_by_script = true
         table.remove(s.doors, i)
         game.forces.player.print({ "sap-dungeon.door-opened" })
-        if dungeon.on_event then dungeon.on_event("door", d.planet) end
+        notify("door", d.planet, door_surface)
       end
     end
   end
@@ -540,7 +557,7 @@ function dungeon.on_tick()
           record.final_cache = cache
           record.core_item = cores.item_of(planet)
           surface.print({ "sap-dungeon.warden-down" })
-          if dungeon.on_event then dungeon.on_event("warden", planet) end
+          notify("warden", planet, surface)
         end
       end
     end
@@ -588,7 +605,7 @@ function dungeon.step_on_traps(character, record)
     if (s.trap_cooldown[id] or 0) <= game.tick then
       s.trap_cooldown[id] = game.tick + TRAP_COOLDOWN
       trigger_trap(trap, character, record.trap_kind or "electric")
-      if dungeon.on_event and character.player then dungeon.on_event("trap", record.planet, character.player) end
+      if character.player then notify("trap", record.planet, nil, character.player) end
       return true
     end
   end
@@ -612,8 +629,9 @@ function dungeon.can_reset(planet)
   return true
 end
 
-function dungeon.reset(planet)
+function dungeon.reset(planet, player)
   if not dungeon.can_reset(planet) then return false end
+  if player then notify("expedition", planet, nil, player) end
   local s = state()
   local record = s.planets[planet]
   for i = #s.doors, 1, -1 do
@@ -696,13 +714,33 @@ function dungeon.on_gui_click(event)
   local entity = player and player.opened
   if not (entity and entity.object_name == "LuaEntity" and entity.valid) then return end
   if action == "dungeon-reset" then
-    if entity.name == ENTRANCE and dungeon.reset(planet_of(entity.surface)) then
+    if entity.name == ENTRANCE and dungeon.reset(planet_of(entity.surface), player) then
       player.print({ "sap-dungeon.reset-done" })
       element.visible = false
     end
     return
   end
   if entity.name == ENTRANCE then dungeon.enter(player, entity) elseif entity.name == EXIT then dungeon.leave(player) end
+end
+
+--- Планета подземелья по его поверхности (nil — не подземелье).
+function dungeon.planet_of_dungeon(surface)
+  local s = state()
+  return s.by_surface and s.by_surface[surface.name]
+end
+
+function dungeon.on_entity_died(event)
+  local entity = event.entity
+  if not (entity and entity.valid and entity.name == KEEPER) then return end
+  local planet = dungeon.planet_of_dungeon(entity.surface)
+  if planet and dungeon.on_event then dungeon.on_event("keeper", event.force or game.forces.player, planet) end
+end
+
+function dungeon.on_player_died(event)
+  local player = game.get_player(event.player_index)
+  if not player then return end
+  local planet = dungeon.planet_of_dungeon(player.surface)
+  if planet then notify("death", planet, nil, player) end
 end
 
 --- Концовка «Печать»: игроки поднимаются на поверхность, подземелья обрушиваются навсегда.
