@@ -25,6 +25,10 @@ data:extend({
   { type = "int-setting", name = "sap-llk-chance", setting_type = "runtime-global",
     default_value = 15, minimum_value = 10, maximum_value = 20, order = "c-b" },
 
+  -- Сюжет: экран победы после выбора концовки (игру можно продолжить).
+  { type = "bool-setting", name = "sap-story-victory", setting_type = "runtime-global",
+    default_value = true, order = "d-a" },
+
   -- Глобальные хардкор-опции
   { type = "bool-setting", name = "sap-hardcore-strict-oxygen", setting_type = "runtime-global",
     default_value = false, order = "z-a" },

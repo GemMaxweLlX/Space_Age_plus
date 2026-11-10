@@ -227,7 +227,28 @@ function player_tests.register(steps, check, finish)
           and math.abs(p.position.x - e.position.x) + math.abs(p.position.y - e.position.y) < 20)
   end
 
-  steps[1200] = function() finish() end
+  -- Древний узел: окно выбора концовки -------------------------------------------------
+  steps[1200] = function()
+    local p = player()
+    remote.call("sap-core", "test_set_story_victory", false)
+    local surface = p.surface
+    local nexus = surface.create_entity({
+      name = "sap-ancient-nexus", force = p.force,
+      position = surface.find_non_colliding_position("sap-ancient-nexus", { p.position.x + 8, p.position.y }, 30, 1),
+    })
+    p.opened = nexus
+    local frame = p.gui.relative["sap_story_frame"]
+    check("player story: nexus window with three endings", frame ~= nil and frame.restore ~= nil
+          and frame.inherit ~= nil and frame.seal ~= nil)
+    if frame then remote.call("sap-core", "test_click", p.index, frame.restore) end
+    check("player story: ending chosen from the window", remote.call("sap-core", "story_ending", p.force.name) == "restore")
+    p.opened = nil
+    p.opened = nexus
+    frame = p.gui.relative["sap_story_frame"]
+    check("player story: buttons disabled after the choice", frame ~= nil and not frame.seal.enabled)
+  end
+
+  steps[1300] = function() finish() end
 end
 
 return player_tests

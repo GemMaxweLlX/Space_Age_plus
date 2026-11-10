@@ -589,13 +589,13 @@ steps[240] = function()
   for i = 1, 60 do platform.eject_item({ name = "iron-plate" }, { hub.x + 3, hub.y + i % 5 }, { 0.1, 0 }) end
 end
 
-for tick = 2400, 2650, 50 do
+for tick = 2400, 3400, 50 do
   steps[tick] = function()
     local platform = storage.echaris_platform
     if not (platform and platform.valid) then return end
     local flavored = #platform.find_asteroid_chunks_filtered({ name = "sap-debris-electrified" })
     storage.max_electrified = math.max(storage.max_electrified or 0, flavored)
-    if tick == 2650 then
+    if tick == 3400 then
       check("debris: echaris orbit gives electrified debris", storage.max_electrified > 0, storage.max_electrified)
     end
   end
@@ -1166,9 +1166,10 @@ steps[9600] = function()
           if surface.get_tile(d.door.position).name == "out-of-map" then on_floor = false end
         end
         check("dungeon " .. planet .. ": doors in corridors", on_floor)
+        local c = record.chunks
         check("dungeon " .. planet .. ": void outside rooms",
-              surface.get_tile(record.start.x + 25, record.start.y + 25).name == "out-of-map"
-              or surface.get_tile(record.start.x - 25, record.start.y - 25).name == "out-of-map")
+              surface.get_tile(c[1] * 32, c[2] * 32).name == "out-of-map"
+              and surface.get_tile(c[3] * 32 + 31, c[4] * 32 + 31).name == "out-of-map")
         local start = surface.find_non_colliding_position("character", record.start, 10, 0.5)
         check("dungeon " .. planet .. ": start is walkable", start ~= nil)
       end
@@ -1210,6 +1211,92 @@ end
 steps[11600] = function()
   local power_door = storage.dungeon_doors and storage.dungeon_doors.power
   check("dungeon: power lock opens its door after the cycle", power_door ~= nil and not power_door.valid)
+end
+
+-- Сюжет и концовки ------------------------------------------------------------------------
+local function has_entry(force_name, key)
+  for _, k in pairs(remote.call("sap-diary", "entries", force_name)) do if k == key then return true end end
+  return false
+end
+
+steps[11700] = function()
+  remote.call("sap-core", "test_set_story_victory", false)
+  local tech = prototypes.technology["sap-ancient-nexus"]
+  local recipe = prototypes.recipe["sap-ancient-nexus"]
+  check("story: nexus prototypes", tech ~= nil and recipe ~= nil)
+  local packs = prototypes.mod_data["sap-planet-packs"].data
+  local in_tech = {}
+  for _, ing in pairs(tech.research_unit_ingredients) do in_tech[ing.name] = true end
+  local in_recipe, cores = {}, 0
+  for _, ing in pairs(recipe.ingredients) do
+    in_recipe[ing.name] = true
+    if ing.name == "sap-ancient-core" then cores = ing.amount end
+  end
+  local n, all_tech, all_recipe = 0, true, true
+  for pack in pairs(packs) do
+    n = n + 1
+    if not in_tech[pack] then all_tech = false end
+    if not in_recipe[pack] then all_recipe = false end
+  end
+  check("story: nexus tech needs every planet pack", all_tech)
+  check("story: nexus recipe needs every planet pack", all_recipe)
+  check("story: nexus recipe needs a core per planet", cores == n, cores .. " vs " .. n)
+  -- Забираем ядра из трёх подземелий.
+  storage.story_taken = 0
+  for _, planet in pairs({ "nauvis", "vulcanus", "fulgora" }) do
+    local surface = game.get_surface("sap-dungeon-" .. planet)
+    for _, cache in pairs(surface and surface.find_entities_filtered({ name = "sap-ancient-cache" }) or {}) do
+      local removed = cache.get_inventory(defines.inventory.chest).remove({ name = "sap-ancient-core", count = 1 })
+      storage.story_taken = storage.story_taken + removed
+    end
+  end
+  check("story: took three cores", storage.story_taken == 3, storage.story_taken)
+end
+
+steps[11800] = function()
+  check("story: core fragment Nauvis", has_entry("player", "story-core-nauvis"))
+  check("story: core fragment Fulgora", has_entry("player", "story-core-fulgora"))
+  check("story: pattern after three cores", has_entry("player", "story-pattern"))
+  check("story: no fragment for an untouched dungeon", not has_entry("player", "story-core-gleba"))
+  local nexus = game.surfaces.nauvis.create_entity({
+    name = "sap-ancient-nexus", force = "player", raise_built = true,
+    position = game.surfaces.nauvis.find_non_colliding_position("sap-ancient-nexus", { -60, 60 }, 60, 1),
+  })
+  check("story: nexus built", nexus ~= nil)
+  check("story: nexus diary entry", has_entry("player", "story-nexus"))
+
+  -- Наследие (команда player).
+  check("story: choose inheritance", remote.call("sap-core", "story_choose", "player", "inherit") == true)
+  check("story: only one ending", remote.call("sap-core", "story_choose", "player", "seal") == false)
+  check("story: ending stored", remote.call("sap-core", "story_ending", "player") == "inherit")
+  local all = true
+  for name, t in pairs(game.forces.player.technologies) do
+    if string.sub(name, 1, 10) == "sap-alien-" and not t.researched then all = false end
+  end
+  check("story: inheritance researches ancient technologies", all)
+  check("story: inheritance epilogue", has_entry("player", "story-ending-inherit"))
+  check("story: game not finished when victory is off", not game.finished)
+
+  -- Пробуждение (отдельная команда): стражи становятся союзниками.
+  local awake = game.create_force("sap-story-awake")
+  local guardian = game.surfaces.nauvis.create_entity({
+    name = "sap-alien-guardian", force = "enemy",
+    position = game.surfaces.nauvis.find_non_colliding_position("sap-alien-guardian", { -90, 90 }, 60, 1),
+  })
+  remote.call("sap-core", "story_choose", awake.name, "restore")
+  check("story: awakening turns guardians into allies", guardian and guardian.valid and guardian.force == awake)
+  if guardian and guardian.valid then guardian.destroy() end
+
+  -- Печать (ещё одна команда): подземелья обрушиваются.
+  local sealer = game.create_force("sap-story-seal")
+  storage.story_bonus = sealer.mining_drill_productivity_bonus
+  remote.call("sap-core", "story_choose", sealer.name, "seal")
+  check("story: seal adds mining productivity", sealer.mining_drill_productivity_bonus > storage.story_bonus + 0.2)
+end
+
+steps[11900] = function()
+  check("story: seal collapses the dungeons", game.get_surface("sap-dungeon-nauvis") == nil
+        and game.get_surface("sap-dungeon-echaris") == nil)
 end
 
 -- После загрузки сохранения (MODE=saveload) ранние шаги уже выполнены; отмечаем загрузку.

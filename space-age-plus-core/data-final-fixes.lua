@@ -59,6 +59,20 @@ do
       if not has then table.insert(lab.inputs, pack) end
     end
   end
+  -- Древний узел (сюжет): колбы всех планет в технологии, по ядру на каждую планету и по 10
+  -- колб каждой планеты в рецепте.
+  local nexus_tech, nexus_recipe = data.raw.technology["sap-ancient-nexus"], data.raw.recipe["sap-ancient-nexus"]
+  if nexus_tech and nexus_recipe then
+    local names = {}
+    for pack in pairs(packs and packs.data or {}) do names[#names + 1] = pack end
+    table.sort(names)
+    local planets = #names
+    for _, pack in pairs(names) do
+      add_pack(nexus_tech, pack)
+      table.insert(nexus_recipe.ingredients, { type = "item", name = pack, amount = 10 })
+    end
+    table.insert(nexus_recipe.ingredients, { type = "item", name = "sap-ancient-core", amount = math.max(1, planets) })
+  end
 end
 
 -- Ванильные планеты тоже открываются через спутники, если включена настройка.

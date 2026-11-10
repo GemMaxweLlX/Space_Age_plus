@@ -8,6 +8,8 @@ local capture = require("scripts.capture")
 local condensing = require("scripts.condensing")
 local no_delivery = require("scripts.no_delivery")
 local dungeon = require("scripts.dungeon")
+local story = require("scripts.story")
+dungeon.on_core_taken = story.on_core_taken
 
 script.on_init(function()
   oxygen.on_init()
@@ -51,11 +53,13 @@ end)
 script.on_event(defines.events.on_gui_opened, function(event)
   techtree.on_gui_opened(event)
   dungeon.on_gui_opened(event)
+  story.on_gui_opened(event)
 end)
 script.on_event(defines.events.on_gui_click, function(event)
   techtree.on_gui_click(event)
   diary.on_gui_click(event)
   dungeon.on_gui_click(event)
+  story.on_gui_click(event)
 end)
 script.on_event(defines.events.on_chunk_generated, function(event)
   techtree.on_chunk_generated(event)
@@ -71,6 +75,7 @@ for _, e in pairs({ defines.events.on_built_entity, defines.events.on_robot_buil
     if entity.name == "sap-telescope" then exploration.on_built(event) end
     quality_bonus.on_built(event)
     diary.on_built(event)
+    story.on_built(entity)
   end)
 end
 for _, e in pairs({ defines.events.on_player_mined_entity, defines.events.on_robot_mined_entity,
@@ -116,6 +121,7 @@ remote.add_interface("sap-core", {
     techtree.on_gui_click(event)
     diary.on_gui_click(event)
     dungeon.on_gui_click(event)
+    story.on_gui_click(event)
   end,
   test_toggle_diary = function(player_index) diary.toggle({ player_index = player_index }) end,
   test_set_llk_chance = function(value) settings.global["sap-llk-chance"] = { value = value } end, -- luacheck: ignore 122
@@ -147,6 +153,9 @@ remote.add_interface("sap-core", {
     end
     return result
   end,
+  story_choose = function(force_name, ending) return story.choose(game.forces[force_name], ending) end,
+  story_ending = function(force_name) return story.ending_of(game.forces[force_name]) end,
+  test_set_story_victory = function(value) settings.global["sap-story-victory"] = { value = value } end, -- luacheck: ignore 122
   researched_quality = function(force_name, tech) return quality_bonus.researched_quality(game.forces[force_name], tech) end,
 })
 

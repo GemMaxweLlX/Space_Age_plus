@@ -6,7 +6,12 @@
 -- (энергетический — сжечь топливо; ключевой — ключ с Хранителя в предыдущем зале), стражи,
 -- тайники с инопланетными картами (качество растёт с глубиной) и древнее ядро в последнем зале.
 
+local diary = require("scripts.diary")
+
 local dungeon = {}
+
+--- Вызывается, когда древнее ядро забрано из последнего зала: (force, planet). Задаёт control.lua.
+dungeon.on_core_taken = nil
 
 dungeon.TICK_INTERVAL = 60
 
@@ -321,6 +326,7 @@ function dungeon.generate(planet)
   if final_cache then
     final_cache.destructible = false
     fill_cache(final_cache, deepest, true)
+    record.final_cache = final_cache
   end
   for _ = 1, 2 do place(surface, "sap-alien-guardian", final.x + rng(-6, 6), final.y + rng(-6, 6), "enemy", 8) end
 
@@ -377,8 +383,28 @@ end
 
 -- Двери ---------------------------------------------------------------------------------
 
+local function check_cores(s)
+  for planet, record in pairs(s.planets) do
+    local cache = record.final_cache
+    if cache and not record.core_taken
+        and (not cache.valid or cache.get_inventory(defines.inventory.chest).get_item_count("sap-ancient-core") == 0) then
+      record.core_taken = true
+      local forces = {}
+      local surface = game.get_surface(record.surface)
+      for _, player in pairs(game.connected_players) do
+        if surface and player.surface == surface then forces[player.force.name] = player.force end
+      end
+      if next(forces) == nil then forces.player = game.forces.player end
+      for _, force in pairs(forces) do
+        if dungeon.on_core_taken then dungeon.on_core_taken(force, planet) end
+      end
+    end
+  end
+end
+
 function dungeon.on_tick()
   local s = state()
+  check_cores(s)
   for i = #s.doors, 1, -1 do
     local d = s.doors[i]
     local open = false
@@ -419,6 +445,10 @@ local function planet_of(surface)
 end
 
 function dungeon.enter(player, entrance)
+  if state().sealed then
+    player.print({ "sap-dungeon.sealed" })
+    return
+  end
   local planet = planet_of(entrance.surface)
   local record = dungeon.generate(planet)
   state().returns[player.index] = { surface = entrance.surface.name, position = entrance.position }
@@ -427,6 +457,7 @@ function dungeon.enter(player, entrance)
   player.opened = nil
   player.teleport(position, surface)
   player.print({ "sap-dungeon.entered" })
+  diary.add(player.force, "story-dungeon")
 end
 
 function dungeon.leave(player)
@@ -462,6 +493,23 @@ function dungeon.on_gui_click(event)
   local entity = player and player.opened
   if not (entity and entity.object_name == "LuaEntity" and entity.valid) then return end
   if entity.name == ENTRANCE then dungeon.enter(player, entity) elseif entity.name == EXIT then dungeon.leave(player) end
+end
+
+--- Концовка «Печать»: игроки поднимаются на поверхность, подземелья обрушиваются навсегда.
+function dungeon.seal()
+  local s = state()
+  s.sealed = true
+  for _, record in pairs(s.planets) do
+    local surface = game.get_surface(record.surface)
+    if surface then
+      for _, player in pairs(game.players) do
+        if player.surface == surface then dungeon.leave(player) end
+      end
+      game.delete_surface(surface)
+    end
+  end
+  s.planets = {}
+  s.doors = {}
 end
 
 --- Для старых сохранений: у хранилищ без входа ставится вход.
